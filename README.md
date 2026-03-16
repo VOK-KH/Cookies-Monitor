@@ -30,30 +30,6 @@
 
 ---
 
-## Project Structure
-
-```
-VOK-Cookies/
-├── manifest.json          # Chrome Extension Manifest V3
-├── resources/
-│   └── logo.png           # README / branding logo
-├── popup/
-│   ├── popup.html         # Extension popup UI
-│   ├── popup.css          # Dark-theme styles
-│   └── popup.js           # All popup logic
-├── background/
-│   └── background.js      # Service worker (badge counter)
-├── icons/
-│   ├── icon16.png
-│   ├── icon32.png
-│   ├── icon48.png
-│   └── icon128.png
-└── tools/
-    └── make-icons.js      # Icon generator (pure Node.js)
-```
-
----
-
 ## Load in Chrome / Edge
 
 1. Open **chrome://extensions** (or **edge://extensions**)
@@ -61,18 +37,6 @@ VOK-Cookies/
 3. Click **Load unpacked**
 4. Select the `VOK-Cookies` folder
 5. The extension appears in your toolbar
-
----
-
-## Regenerate Icons
-
-If you want to regenerate the icons:
-
-```bash
-node tools/make-icons.js
-```
-
-Requires Node.js (no extra packages needed).
 
 ---
 
@@ -120,3 +84,5 @@ Requires Node.js (no extra packages needed).
   }
 }
 ```
+
+---
