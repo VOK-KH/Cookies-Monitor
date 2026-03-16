@@ -1,0 +1,56 @@
+# When version in manifest.json is bumped on main, create and push tag vX.Y.Z
+# so the Release workflow can run and publish the new version.
+
+name: Create version tag
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'manifest.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fetch tags
+        run: git fetch --tags
+
+      - name: Get version from manifest
+        id: manifest
+        run: |
+          VERSION=$(node -p "require('./manifest.json').version")
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version in manifest: $VERSION"
+
+      - name: Check if tag exists
+        id: tag_check
+        run: |
+          TAG="v${{ steps.manifest.outputs.VERSION }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Tag $TAG already exists, skipping."
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Tag $TAG will be created."
+          fi
+
+      - name: Create and push tag
+        if: steps.tag_check.outputs.exists == 'false'
+        run: |
+          TAG="v${{ steps.manifest.outputs.VERSION }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"

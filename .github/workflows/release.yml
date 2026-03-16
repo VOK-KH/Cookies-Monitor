@@ -1,0 +1,55 @@
+# Create GitHub Release when a version tag (v1.0.0, v1.0.1, ...) is pushed.
+# Tag can be pushed manually: git tag v1.0.1 && git push origin v1.0.1
+# Or use the "Create version tag" workflow to auto-create tag from manifest.json.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Create extension zip
+        run: |
+          ZIP_NAME="vok-cookies-${{ steps.version.outputs.VERSION }}.zip"
+          zip -r "$ZIP_NAME" \
+            manifest.json \
+            popup \
+            background \
+            icons \
+            resources \
+            -x "*.git*" "*.DS_Store"
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "VOK Cookies ${{ github.ref_name }}"
+          body: |
+            ## VOK Cookies ${{ github.ref_name }}
+            Browser extension for managing, exporting, and importing cookies.
+            ### Install
+            1. Download `vok-cookies-${{ steps.version.outputs.VERSION }}.zip` below.
+            2. Unzip and load the folder in Chrome: **chrome://extensions** → Developer mode → Load unpacked.
+          files: vok-cookies-${{ steps.version.outputs.VERSION }}.zip
+          draft: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,53 @@
+# Changelog
+
+All notable changes to VOK Cookies are documented in this file.
+
+---
+
+## [1.0.0] — 2026-03-16
+
+### Added
+
+- **Cookie Manager**
+  - View all cookies for the current tab with search
+  - Expand cookie rows to see full details (name, value, domain, path, expiry, SameSite)
+  - Add new cookies (name, value, path, expiry, Secure, HttpOnly, SameSite)
+  - Edit existing cookies inline
+  - Delete individual cookies
+  - Copy cookie value to clipboard
+
+- **Profiles**
+  - Save current tab cookies as a named profile
+  - Load a saved profile into the current tab (apply cookies)
+  - Delete profiles
+  - Profile list shows domain, cookie count, and save date
+
+- **Export**
+  - Export current tab cookies as JSON file
+  - Export all saved profiles as a single JSON file
+
+- **Import**
+  - Import cookies from JSON (with preview before applying)
+  - Import profiles from JSON (merge with existing profiles)
+  - **Drag-and-drop** support: drop a `.json` file onto the Cookies or Profiles import card
+  - Choose File button for both import types
+
+- **After import**
+  - Current tab reloads automatically after applying a cookies import so the page uses the new cookies
+
+- **UI / UX**
+  - Dark theme with accent purple, clean cards and typography
+  - Three tabs: Cookies, Profiles, Transfer
+  - Toast notifications for success and errors
+  - Extension badge shows live cookie count per tab
+  - README with logo header, badges, and setup instructions
+
+- **Project**
+  - Chrome Extension Manifest V3
+  - Background service worker for badge updates
+  - Icon set (16, 32, 48, 128) generated via `tools/make-icons.js`
+  - `resources/logo.png` for README branding
+
+---
+
+[1.0.0]: https://github.com/k10978311-ai/VOK/releases/tag/v1.0.0
