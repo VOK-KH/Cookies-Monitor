@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VOK Cookies</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="app">
+
+    <!-- ── Header ── -->
+    <header class="header">
+      <div class="header-left">
+        <div class="logo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" fill="#f59e42"/>
+            <circle cx="8"  cy="9"  r="1.5" fill="#7c4a03"/>
+            <circle cx="14" cy="8"  r="1.2" fill="#7c4a03"/>
+            <circle cx="16" cy="14" r="1.4" fill="#7c4a03"/>
+            <circle cx="9"  cy="15" r="1.3" fill="#7c4a03"/>
+            <circle cx="12" cy="12" r="1.1" fill="#7c4a03"/>
+          </svg>
+        </div>
+        <div class="header-info">
+          <h1 class="app-title">VOK Cookies</h1>
+          <span class="domain-badge" id="currentDomain">Loading…</span>
+        </div>
+      </div>
+      <button class="icon-btn" id="refreshBtn" title="Refresh cookies">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"/>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+        </svg>
+      </button>
+    </header>
+
+    <!-- ── Navigation ── -->
+    <nav class="nav">
+      <button class="nav-tab active" data-tab="cookies">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <circle cx="8"  cy="9"  r="1.5" fill="currentColor" stroke="none"/>
+          <circle cx="15" cy="9"  r="1.5" fill="currentColor" stroke="none"/>
+          <circle cx="10" cy="15" r="1.5" fill="currentColor" stroke="none"/>
+        </svg>
+        Cookies
+        <span class="nav-badge" id="cookieCount">0</span>
+      </button>
+      <button class="nav-tab" data-tab="profiles">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        Profiles
+        <span class="nav-badge" id="profileCount">0</span>
+      </button>
+      <button class="nav-tab" data-tab="transfer">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="17 1 21 5 17 9"/>
+          <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+          <polyline points="7 23 3 19 7 15"/>
+          <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+        </svg>
+        Transfer
+      </button>
+    </nav>
+
+    <!-- ── Content ── -->
+    <main class="content">
+
+      <!-- ── Cookies Tab ── -->
+      <div class="tab-panel active" id="tab-cookies">
+        <div class="panel-toolbar">
+          <div class="search-wrap">
+            <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="text" class="search-input" id="cookieSearch" placeholder="Search cookies…" autocomplete="off" />
+          </div>
+          <button class="btn btn-primary btn-sm" id="addCookieBtn">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add
+          </button>
+        </div>
+
+        <!-- Add Cookie Form -->
+        <div class="form-card hidden" id="addCookieForm">
+          <div class="form-card-title">New Cookie</div>
+          <div class="form-row">
+            <div class="field">
+              <label class="field-label">Name</label>
+              <input type="text" class="form-input" id="newName" placeholder="session_id" autocomplete="off" />
+            </div>
+            <div class="field">
+              <label class="field-label">Value</label>
+              <input type="text" class="form-input" id="newValue" placeholder="abc123…" autocomplete="off" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label class="field-label">Path</label>
+              <input type="text" class="form-input" id="newPath" placeholder="/" autocomplete="off" />
+            </div>
+            <div class="field">
+              <label class="field-label">Expires (days, blank = session)</label>
+              <input type="number" class="form-input" id="newExpiry" placeholder="30" min="0" />
+            </div>
+          </div>
+          <div class="form-row flags-row">
+            <label class="toggle-label">
+              <input type="checkbox" id="newSecure" />
+              <span class="toggle-pill"></span>
+              Secure
+            </label>
+            <label class="toggle-label">
+              <input type="checkbox" id="newHttpOnly" />
+              <span class="toggle-pill"></span>
+              HttpOnly
+            </label>
+            <label class="toggle-label">
+              <input type="checkbox" id="newSameSite" />
+              <span class="toggle-pill"></span>
+              SameSite Strict
+            </label>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-ghost btn-sm" id="cancelAddBtn">Cancel</button>
+            <button class="btn btn-primary btn-sm" id="saveNewCookieBtn">Save Cookie</button>
+          </div>
+        </div>
+
+        <div class="cookie-list" id="cookieList"></div>
+
+        <div class="empty-state hidden" id="cookiesEmpty">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="8" y1="12" x2="16" y2="12"/>
+          </svg>
+          <p>No cookies found</p>
+          <span>This page has no cookies or they are filtered out</span>
+        </div>
+      </div>
+
+      <!-- ── Profiles Tab ── -->
+      <div class="tab-panel" id="tab-profiles">
+        <div class="panel-toolbar">
+          <span class="toolbar-label">Saved Profiles</span>
+          <button class="btn btn-primary btn-sm" id="saveProfileBtn">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+              <polyline points="17 21 17 13 7 13 7 21"/>
+              <polyline points="7 3 7 8 15 8"/>
+            </svg>
+            Save Current
+          </button>
+        </div>
+
+        <!-- Save Profile Form -->
+        <div class="form-card hidden" id="saveProfileForm">
+          <div class="form-card-title">Save Profile</div>
+          <div class="field">
+            <label class="field-label">Profile Name</label>
+            <input type="text" class="form-input full-width" id="profileNameInput" placeholder="e.g. Work Account, Dev Session…" autocomplete="off" />
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-ghost btn-sm" id="cancelProfileBtn">Cancel</button>
+            <button class="btn btn-primary btn-sm" id="confirmSaveProfileBtn">Save Profile</button>
+          </div>
+        </div>
+
+        <div class="profile-list" id="profileList"></div>
+
+        <div class="empty-state hidden" id="profilesEmpty">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <p>No profiles yet</p>
+          <span>Save your current cookies as a reusable profile</span>
+        </div>
+      </div>
+
+      <!-- ── Transfer Tab ── -->
+      <div class="tab-panel" id="tab-transfer">
+
+        <div class="transfer-section">
+          <div class="section-heading">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Export
+          </div>
+          <div class="transfer-card">
+            <div class="transfer-card-body">
+              <div class="transfer-card-title">Current Tab Cookies</div>
+              <div class="transfer-card-desc">Download cookies for this domain as JSON</div>
+            </div>
+            <button class="btn btn-primary btn-sm" id="exportCurrentBtn">Export</button>
+          </div>
+          <div class="transfer-card">
+            <div class="transfer-card-body">
+              <div class="transfer-card-title">All Saved Profiles</div>
+              <div class="transfer-card-desc">Bundle all profiles into one JSON file</div>
+            </div>
+            <button class="btn btn-primary btn-sm" id="exportProfilesBtn">Export</button>
+          </div>
+        </div>
+
+        <div class="transfer-section">
+          <div class="section-heading">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            Import
+          </div>
+          <div class="transfer-card">
+            <div class="transfer-card-body">
+              <div class="transfer-card-title">Cookies from JSON</div>
+              <div class="transfer-card-desc">Load cookies into the current tab</div>
+            </div>
+            <label class="btn btn-outline btn-sm" for="importCookiesFile">
+              Choose File
+              <input type="file" id="importCookiesFile" accept=".json" hidden />
+            </label>
+          </div>
+          <div class="transfer-card">
+            <div class="transfer-card-body">
+              <div class="transfer-card-title">Profiles from JSON</div>
+              <div class="transfer-card-desc">Restore profiles from a previous export</div>
+            </div>
+            <label class="btn btn-outline btn-sm" for="importProfilesFile">
+              Choose File
+              <input type="file" id="importProfilesFile" accept=".json" hidden />
+            </label>
+          </div>
+        </div>
+
+        <!-- Import Preview -->
+        <div class="import-preview hidden" id="importPreview">
+          <div class="section-heading">Preview</div>
+          <div class="preview-list" id="previewList"></div>
+          <div class="form-actions">
+            <button class="btn btn-ghost btn-sm" id="cancelImportBtn">Cancel</button>
+            <button class="btn btn-primary btn-sm" id="confirmImportBtn">Apply</button>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- ── Toast ── -->
+    <div class="toast hidden" id="toast">
+      <span class="toast-icon" id="toastIcon"></span>
+      <span id="toastMessage"></span>
+    </div>
+
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
