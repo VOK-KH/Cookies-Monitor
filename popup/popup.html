@@ -218,20 +218,22 @@
             </svg>
             Import
           </div>
-          <div class="transfer-card">
+          <div class="transfer-card drop-zone" data-import-type="cookies" id="dropZoneCookies">
             <div class="transfer-card-body">
               <div class="transfer-card-title">Cookies from JSON</div>
               <div class="transfer-card-desc">Load cookies into the current tab</div>
+              <span class="drop-hint">or drag a .json file here</span>
             </div>
             <label class="btn btn-outline btn-sm" for="importCookiesFile">
               Choose File
               <input type="file" id="importCookiesFile" accept=".json" hidden />
             </label>
           </div>
-          <div class="transfer-card">
+          <div class="transfer-card drop-zone" data-import-type="profiles" id="dropZoneProfiles">
             <div class="transfer-card-body">
               <div class="transfer-card-title">Profiles from JSON</div>
               <div class="transfer-card-desc">Restore profiles from a previous export</div>
+              <span class="drop-hint">or drag a .json file here</span>
             </div>
             <label class="btn btn-outline btn-sm" for="importProfilesFile">
               Choose File

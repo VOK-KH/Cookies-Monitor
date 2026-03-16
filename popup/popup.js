@@ -90,6 +90,43 @@ function setupListeners() {
   document.getElementById('importProfilesFile').addEventListener('change', e => handleImportFile(e, 'profiles'));
   document.getElementById('cancelImportBtn').addEventListener('click', cancelImport);
   document.getElementById('confirmImportBtn').addEventListener('click', applyImport);
+
+  setupDropZones();
+}
+
+// ── Drag-and-drop import ─────────────────
+function setupDropZones() {
+  const zones = [
+    { el: document.getElementById('dropZoneCookies'), type: 'cookies' },
+    { el: document.getElementById('dropZoneProfiles'), type: 'profiles' },
+  ];
+
+  for (const { el, type } of zones) {
+    if (!el) continue;
+    el.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = 'copy';
+      el.classList.add('drag-over');
+    });
+    el.addEventListener('dragleave', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!el.contains(e.relatedTarget)) el.classList.remove('drag-over');
+    });
+    el.addEventListener('drop', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      el.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (!file) return;
+      if (!file.name.toLowerCase().endsWith('.json')) {
+        showToast('Please drop a .json file', 'error');
+        return;
+      }
+      processImportFile(file, type);
+    });
+  }
 }
 
 function switchTab(tabId) {
@@ -523,7 +560,10 @@ function handleImportFile(e, type) {
   const file = e.target.files[0];
   e.target.value = '';
   if (!file) return;
+  processImportFile(file, type);
+}
 
+function processImportFile(file, type) {
   const reader = new FileReader();
   reader.onload = ev => {
     try {
@@ -597,6 +637,7 @@ async function applyImport() {
     await loadCookies();
     switchTab('cookies');
     showToast(failed > 0 ? `Applied ${applied}, failed ${failed}` : `${applied} cookies imported`, failed > 0 ? 'error' : 'success');
+    if (currentTab?.id) chrome.tabs.reload(currentTab.id);
 
   } else if (importPayload.type === 'profiles') {
     const incoming = importPayload.data;

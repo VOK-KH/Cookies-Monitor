@@ -591,9 +591,23 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  transition: border-color var(--transition);
+  transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
 }
 .transfer-card:hover { border-color: var(--border2); }
+
+/* Drop zone state */
+.transfer-card.drop-zone.drag-over {
+  border-color: var(--accent);
+  background: rgba(124, 110, 245, .08);
+  box-shadow: 0 0 0 2px rgba(124, 110, 245, .2);
+}
+
+.drop-hint {
+  display: block;
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
 
 .transfer-card-body { flex: 1; }
 .transfer-card-title { font-size: 12px; font-weight: 600; color: var(--text); }
