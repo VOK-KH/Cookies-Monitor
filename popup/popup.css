@@ -96,6 +96,36 @@ body {
   white-space: nowrap;
 }
 
+.lang-switcher {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-right: 8px;
+}
+
+.lang-btn {
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.lang-btn:hover {
+  color: var(--text);
+  background: var(--surface2);
+}
+
+.lang-btn.active {
+  color: var(--accent);
+  background: var(--surface2);
+  border-color: var(--border2);
+}
+
 .icon-btn {
   background: none;
   border: 1px solid var(--border);

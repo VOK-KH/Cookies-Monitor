@@ -11,6 +11,200 @@ let currentDomain = '';
 let cookies       = [];
 let profiles      = {};
 let importPayload = null;  // { type: 'cookies'|'profiles', data }
+let currentLang   = 'en';
+
+// ── Translations (English / Khmer) ────────
+const translations = {
+  en: {
+    loading: 'Loading…',
+    refreshCookies: 'Refresh cookies',
+    navTransfer: 'Transfer',
+    navProfiles: 'Profiles',
+    navCookies: 'Cookies',
+    searchPlaceholder: 'Search cookies…',
+    add: 'Add',
+    newCookie: 'New Cookie',
+    name: 'Name',
+    value: 'Value',
+    path: 'Path',
+    expiresLabel: 'Expires (days, blank = session)',
+    secure: 'Secure',
+    httpOnly: 'HttpOnly',
+    sameSiteStrict: 'SameSite Strict',
+    cancel: 'បោះបង់',
+    save: 'រក្សា',
+    saveCookie: 'រក្សាខូគី',
+    noCookiesFound: 'No cookies found',
+    noCookiesDesc: 'This page has no cookies or they are filtered out',
+    savedProfiles: 'Saved Profiles',
+    saveCurrent: 'Save Current',
+    saveProfile: 'Save Profile',
+    profileName: 'Profile Name',
+    profileNamePlaceholder: 'e.g. Work Account, Dev Session…',
+    noProfilesYet: 'No profiles yet',
+    noProfilesDesc: 'Save your current cookies as a reusable profile',
+    exportHeading: 'Export',
+    importHeading: 'Import',
+    currentTabCookies: 'Current Tab Cookies',
+    currentTabCookiesDesc: 'Download cookies for this domain as JSON',
+    allProfiles: 'All Saved Profiles',
+    allProfilesDesc: 'Bundle all profiles into one JSON file',
+    exportBtn: 'Export',
+    cookiesFromJson: 'Cookies from JSON',
+    cookiesFromJsonDesc: 'Load cookies into the current tab',
+    profilesFromJson: 'Profiles from JSON',
+    profilesFromJsonDesc: 'Restore profiles from a previous export',
+    dropHint: 'or drag a .json file here',
+    chooseFile: 'Choose File',
+    preview: 'Preview',
+    apply: 'Apply',
+    applyCookies: 'Apply Cookies',
+    importProfiles: 'Import Profiles',
+    toastCopied: 'Copied!',
+    copyFailed: 'Copy failed',
+    cookieNameRequired: 'Cookie name is required',
+    cookieSaved: 'Cookie "%s" saved',
+    saveFailed: 'Failed to save: %s',
+    cookieDeleted: '"%s" deleted',
+    deleteFailed: 'Delete failed: %s',
+    nameCannotBeEmpty: 'Name cannot be empty',
+    cookieUpdated: 'Cookie updated',
+    updateFailed: 'Update failed: %s',
+    profileNameRequired: 'Profile name is required',
+    profileSaved: 'Profile "%s" saved',
+    profileApplied: 'Profile "%s" applied (%d cookies)',
+    profileAppliedSomeFailed: 'Applied %d, failed %d cookies',
+    profileDeleted: 'Profile "%s" deleted',
+    noCookiesToExport: 'No cookies to export',
+    exportedCookies: 'Exported %d cookies',
+    noProfilesToExport: 'No profiles to export',
+    exportedProfiles: 'Exported %d profile(s)',
+    invalidFile: 'Invalid file: %s',
+    dropJsonFile: 'Please drop a .json file',
+    cookiesRefreshed: 'Cookies refreshed',
+    initFailed: 'Failed to initialize: %s',
+    copyValue: 'Copy value',
+    load: 'Load',
+    delete: 'Delete',
+    loadIntoCurrentTab: 'Load into current tab',
+    deleteProfileTitle: 'Delete profile',
+    edit: 'Edit',
+    session: 'Session',
+    andMore: '…and %d more',
+    cookiesImported: '%d cookies imported',
+    appliedFailed: 'Applied %d, failed %d',
+    profilesImported: '%d profile(s) imported',
+  },
+  km: {
+    loading: 'កំពុងផ្ទុក…',
+    refreshCookies: 'ធ្វើឱ្យខូគីស្រស់',
+    navTransfer: 'ផ្ទេរ',
+    navProfiles: 'ប្រវត្តិរូប',
+    navCookies: 'ខូគី',
+    searchPlaceholder: 'ស្វែងរកខូគី…',
+    add: 'បន្ថែម',
+    newCookie: 'ខូគីថ្មី',
+    name: 'ឈ្មោះ',
+    value: 'តម្លៃ',
+    path: 'ផ្លូវ',
+    expiresLabel: 'ផុតកំណត់ (ថ្ងៃ, ទទេ = វគ្គ)',
+    secure: 'Secure',
+    httpOnly: 'HttpOnly',
+    sameSiteStrict: 'SameSite Strict',
+    cancel: 'បោះបង់',
+    save: 'រក្សា',
+    saveCookie: 'រក្សាខូគី',
+    noCookiesFound: 'រកមិនឃើញខូគី',
+    noCookiesDesc: 'ទំព័រនេះគ្មានខូគី ឬត្រូវច្រោះចេញ',
+    savedProfiles: 'ប្រវត្តិរូបរក្សាទុក',
+    saveCurrent: 'រក្សាឥឡូវ',
+    saveProfile: 'រក្សាប្រវត្តិរូប',
+    profileName: 'ឈ្មោះប្រវត្តិរូប',
+    profileNamePlaceholder: 'ឧ. គណនីការងារ, វគ្គ Dev…',
+    noProfilesYet: 'មិនទាន់មានប្រវត្តិរូប',
+    noProfilesDesc: 'រក្សាខូគីឥឡូវជាប្រវត្តិរូបដែលប្រើឡើងវិញបាន',
+    exportHeading: 'នាំចេញ',
+    importHeading: 'នាំចូល',
+    currentTabCookies: 'ខូគីផ្ទាំងឥឡូវ',
+    currentTabCookiesDesc: 'ទាញយកខូគីដែននេះជា JSON',
+    allProfiles: 'ប្រវត្តិរូបរក្សាទុកទាំងអស់',
+    allProfilesDesc: 'រួមប្រវត្តិរូបទាំងអស់ជាឯកសារ JSON មួយ',
+    exportBtn: 'នាំចេញ',
+    cookiesFromJson: 'ខូគីពី JSON',
+    cookiesFromJsonDesc: 'ផ្ទុកខូគីចូលផ្ទាំងឥឡូវ',
+    profilesFromJson: 'ប្រវត្តិរូបពី JSON',
+    profilesFromJsonDesc: 'ស្តារប្រវត្តិរូបពីការនាំចេញមុន',
+    dropHint: 'ឬអូសឯកសារ .json មកទីនេះ',
+    chooseFile: 'ជ្រើសរើសឯកសារ',
+    preview: 'មុនមើល',
+    apply: 'អនុវត្ត',
+    applyCookies: 'អនុវត្តខូគី',
+    importProfiles: 'នាំចូលប្រវត្តិរូប',
+    toastCopied: 'ចម្លងហើយ!',
+    copyFailed: 'ចម្លងមិនបាន',
+    cookieNameRequired: 'ត្រូវការឈ្មោះខូគី',
+    cookieSaved: 'រក្សាខូគី "%s" រួច',
+    saveFailed: 'រក្សាមិនបាន: %s',
+    cookieDeleted: '"%s" ត្រូវបានលុប',
+    deleteFailed: 'លុបមិនបាន: %s',
+    nameCannotBeEmpty: 'ឈ្មោះមិនអាចទទេ',
+    cookieUpdated: 'ខូគីត្រូវបានធ្វើឱ្យទាន់សម័យ',
+    updateFailed: 'ធ្វើឱ្យទាន់សម័យមិនបាន: %s',
+    profileNameRequired: 'ត្រូវការឈ្មោះប្រវត្តិរូប',
+    profileSaved: 'រក្សាប្រវត្តិរូប "%s" រួច',
+    profileApplied: 'អនុវត្តប្រវត្តិរូប "%s" (%d ខូគី)',
+    profileAppliedSomeFailed: 'អនុវត្ត %d, បរាជ័យ %d ខូគី',
+    profileDeleted: 'ប្រវត្តិរូប "%s" ត្រូវបានលុប',
+    noCookiesToExport: 'គ្មានខូគីដើម្បីនាំចេញ',
+    exportedCookies: 'បាននាំចេញ %d ខូគី',
+    noProfilesToExport: 'គ្មានប្រវត្តិរូបដើម្បីនាំចេញ',
+    exportedProfiles: 'បាននាំចេញ %d ប្រវត្តិរូប',
+    invalidFile: 'ឯកសារមិនត្រឹមត្រូវ: %s',
+    dropJsonFile: 'សូមដាក់ឯកសារ .json',
+    cookiesRefreshed: 'ខូគីស្រស់ហើយ',
+    initFailed: 'ចាប់ផ្តើមមិនបាន: %s',
+    copyValue: 'ចម្លងតម្លៃ',
+    load: 'ផ្ទុក',
+    delete: 'លុប',
+    loadIntoCurrentTab: 'ផ្ទុកចូលផ្ទាំងឥឡូវ',
+    deleteProfileTitle: 'លុបប្រវត្តិរូប',
+    edit: 'កែ',
+    session: 'វគ្គ',
+    andMore: '…និង %d ទៀត',
+    cookiesImported: 'នាំចូល %d ខូគី',
+    appliedFailed: 'អនុវត្ត %d, បរាជ័យ %d',
+    profilesImported: 'នាំចូល %d ប្រវត្តិរូប',
+  },
+};
+
+function t(key, opts = {}) {
+  const s = (translations[currentLang] && translations[currentLang][key]) || translations.en[key] || key;
+  if (typeof s !== 'string') return key;
+  const numValues = opts.values || (opts.applied !== undefined && opts.failed !== undefined ? [opts.applied, opts.failed] : null);
+  let numIndex = 0;
+  return s
+    .replace(/%s/g, () => opts.s ?? opts.name ?? '')
+    .replace(/%d/g, () => String(numValues ? (numValues[numIndex++] ?? 0) : (opts.d ?? opts.count ?? 0)));
+}
+
+function applyTranslations(lang) {
+  currentLang = lang;
+  document.documentElement.lang = lang === 'km' ? 'km' : 'en';
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.getAttribute('data-i18n'));
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (key) el.placeholder = t(key);
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    const key = el.getAttribute('data-i18n-title');
+    if (key) el.title = t(key);
+  });
+  document.querySelectorAll('.lang-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.lang === lang);
+  });
+}
 
 // ── Init ─────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => init());
@@ -28,13 +222,17 @@ async function init() {
       currentDomain = 'unknown';
     }
 
+    const { lang } = await chrome.storage.local.get('lang');
+    currentLang = lang === 'km' ? 'km' : 'en';
+    applyTranslations(currentLang);
+
     document.getElementById('currentDomain').textContent = currentDomain || 'unknown';
 
     await loadCookies();
     await loadProfiles();
     setupListeners();
   } catch (err) {
-    showToast('Failed to initialize: ' + err.message, 'error');
+    showToast(t('initFailed', { s: err.message }), 'error');
   }
 }
 
@@ -63,10 +261,22 @@ function setupListeners() {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab));
   });
 
+  // Language switcher
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const lang = btn.dataset.lang === 'km' ? 'km' : 'en';
+      currentLang = lang;
+      chrome.storage.local.set({ lang });
+      applyTranslations(lang);
+      renderCookies(document.getElementById('cookieSearch')?.value || '');
+      renderProfiles();
+    });
+  });
+
   // Refresh
   document.getElementById('refreshBtn').addEventListener('click', async () => {
     await loadCookies();
-    showToast('Cookies refreshed', 'success');
+    showToast(t('cookiesRefreshed'), 'success');
   });
 
   // ── Cookies tab
@@ -121,7 +331,7 @@ function setupDropZones() {
       const file = e.dataTransfer.files[0];
       if (!file) return;
       if (!file.name.toLowerCase().endsWith('.json')) {
-        showToast('Please drop a .json file', 'error');
+        showToast(t('dropJsonFile'), 'error');
         return;
       }
       processImportFile(file, type);
@@ -182,12 +392,12 @@ function renderCookies(filter = '') {
 function cookieItemHTML(c, idx) {
   const expiry = c.expirationDate
     ? new Date(c.expirationDate * 1000).toLocaleString()
-    : 'Session';
+    : t('session');
 
   const flags = [
     c.secure   ? '<span class="flag-badge flag-secure">Secure</span>' : '',
     c.httpOnly ? '<span class="flag-badge flag-http">HttpOnly</span>' : '',
-    !c.expirationDate ? '<span class="flag-badge flag-session">Session</span>' : '',
+    !c.expirationDate ? '<span class="flag-badge flag-session">' + t('session') + '</span>' : '',
   ].join('');
 
   const valuePreview = c.value.length > 40 ? c.value.slice(0, 40) + '…' : c.value;
@@ -205,12 +415,12 @@ function cookieItemHTML(c, idx) {
 
     <div class="cookie-details">
       <div class="detail-grid">
-        <span class="detail-key">Name</span>
+        <span class="detail-key">${t('name')}</span>
         <span class="detail-val">${escHtml(c.name)}</span>
-        <span class="detail-key">Value</span>
+        <span class="detail-key">${t('value')}</span>
         <span class="detail-val" style="display:flex;align-items:flex-start;gap:6px;">
           <span style="flex:1;word-break:break-all;">${escHtml(c.value || '(empty)')}</span>
-          <button class="copy-btn" data-action="copy-value" data-value="${escAttr(c.value)}" title="Copy value">
+          <button class="copy-btn" data-action="copy-value" data-value="${escAttr(c.value)}" title="${escAttr(t('copyValue'))}">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
             </svg>
@@ -218,7 +428,7 @@ function cookieItemHTML(c, idx) {
         </span>
         <span class="detail-key">Domain</span>
         <span class="detail-val">${escHtml(c.domain)}</span>
-        <span class="detail-key">Path</span>
+        <span class="detail-key">${t('path')}</span>
         <span class="detail-val">${escHtml(c.path)}</span>
         <span class="detail-key">Expires</span>
         <span class="detail-val">${escHtml(expiry)}</span>
@@ -231,14 +441,14 @@ function cookieItemHTML(c, idx) {
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
           </svg>
-          Edit
+          ${t('edit')}
         </button>
         <button class="btn btn-danger btn-xs" data-action="delete" data-name="${escAttr(c.name)}">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
             <path d="M9 6V4h6v2"/>
           </svg>
-          Delete
+          ${t('delete')}
         </button>
       </div>
     </div>
@@ -247,21 +457,21 @@ function cookieItemHTML(c, idx) {
     <div class="cookie-edit-form">
       <div class="form-row">
         <div class="field">
-          <label class="field-label">Name</label>
+          <label class="field-label">${t('name')}</label>
           <input class="form-input" id="edit-name-${escAttr(c.name)}" value="${escAttr(c.name)}" />
         </div>
         <div class="field">
-          <label class="field-label">Value</label>
+          <label class="field-label">${t('value')}</label>
           <input class="form-input" id="edit-value-${escAttr(c.name)}" value="${escAttr(c.value)}" />
         </div>
       </div>
       <div class="form-row">
         <div class="field">
-          <label class="field-label">Path</label>
+          <label class="field-label">${t('path')}</label>
           <input class="form-input" id="edit-path-${escAttr(c.name)}" value="${escAttr(c.path)}" />
         </div>
         <div class="field">
-          <label class="field-label">Expires (days, blank = session)</label>
+          <label class="field-label">${t('expiresLabel')}</label>
           <input type="number" class="form-input" id="edit-expiry-${escAttr(c.name)}"
             value="${c.expirationDate ? Math.max(0, Math.round((c.expirationDate - Date.now()/1000) / 86400)) : ''}" />
         </div>
@@ -269,16 +479,16 @@ function cookieItemHTML(c, idx) {
       <div class="form-row flags-row">
         <label class="toggle-label">
           <input type="checkbox" id="edit-secure-${escAttr(c.name)}" ${c.secure ? 'checked' : ''} />
-          <span class="toggle-pill"></span> Secure
+          <span class="toggle-pill"></span> ${t('secure')}
         </label>
         <label class="toggle-label">
           <input type="checkbox" id="edit-httponly-${escAttr(c.name)}" ${c.httpOnly ? 'checked' : ''} />
-          <span class="toggle-pill"></span> HttpOnly
+          <span class="toggle-pill"></span> ${t('httpOnly')}
         </label>
       </div>
       <div class="form-actions">
-        <button class="btn btn-ghost btn-xs" data-action="cancel-edit" data-name="${escAttr(c.name)}">Cancel</button>
-        <button class="btn btn-primary btn-xs" data-action="save-edit" data-name="${escAttr(c.name)}">Save</button>
+        <button class="btn btn-ghost btn-xs" data-action="cancel-edit" data-name="${escAttr(c.name)}">${t('cancel')}</button>
+        <button class="btn btn-primary btn-xs" data-action="save-edit" data-name="${escAttr(c.name)}">${t('save')}</button>
       </div>
     </div>
   </div>`;
@@ -307,7 +517,7 @@ async function saveNewCookie() {
   const httpOnly= document.getElementById('newHttpOnly').checked;
   const sameSiteStrict = document.getElementById('newSameSite').checked;
 
-  if (!name) { showToast('Cookie name is required', 'error'); return; }
+  if (!name) { showToast(t('cookieNameRequired'), 'error'); return; }
 
   const cookieData = {
     url:      currentUrl,
@@ -328,9 +538,9 @@ async function saveNewCookie() {
     hideForm('addCookieForm');
     clearNewCookieForm();
     await loadCookies();
-    showToast(`Cookie "${name}" saved`, 'success');
+    showToast(t('cookieSaved', { name }), 'success');
   } catch (err) {
-    showToast('Failed to save: ' + err.message, 'error');
+    showToast(t('saveFailed', { s: err.message }), 'error');
   }
 }
 
@@ -347,9 +557,9 @@ async function deleteCookie(name) {
   try {
     await chrome.cookies.remove({ url: currentUrl, name });
     await loadCookies();
-    showToast(`"${name}" deleted`, 'success');
+    showToast(t('cookieDeleted', { name }), 'success');
   } catch (err) {
-    showToast('Delete failed: ' + err.message, 'error');
+    showToast(t('deleteFailed', { s: err.message }), 'error');
   }
 }
 
@@ -374,7 +584,7 @@ async function saveEditCookie(originalName) {
   const secure   = document.getElementById(`edit-secure-${escape}`)?.checked;
   const httpOnly = document.getElementById(`edit-httponly-${escape}`)?.checked;
 
-  if (!name) { showToast('Name cannot be empty', 'error'); return; }
+  if (!name) { showToast(t('nameCannotBeEmpty'), 'error'); return; }
 
   try {
     // Remove old if name changed
@@ -389,16 +599,16 @@ async function saveEditCookie(originalName) {
 
     await chrome.cookies.set(cookieData);
     await loadCookies();
-    showToast(`Cookie updated`, 'success');
+    showToast(t('cookieUpdated'), 'success');
   } catch (err) {
-    showToast('Update failed: ' + err.message, 'error');
+    showToast(t('updateFailed', { s: err.message }), 'error');
   }
 }
 
 // ── Profiles ──────────────────────────────
 async function saveProfile() {
   const name = document.getElementById('profileNameInput').value.trim();
-  if (!name) { showToast('Profile name is required', 'error'); return; }
+  if (!name) { showToast(t('profileNameRequired'), 'error'); return; }
 
   const id = 'p_' + Date.now();
   profiles[id] = {
@@ -414,7 +624,7 @@ async function saveProfile() {
   document.getElementById('profileNameInput').value = '';
   renderProfiles();
   updateBadge('profileCount', Object.keys(profiles).length);
-  showToast(`Profile "${name}" saved`, 'success');
+  showToast(t('profileSaved', { name }), 'success');
 }
 
 function renderProfiles() {
@@ -458,13 +668,13 @@ function profileCardHTML(p) {
       </div>
     </div>
     <div class="profile-actions">
-      <button class="btn btn-primary btn-xs" data-action="load-profile" data-id="${escAttr(p.id)}" title="Load into current tab">
+      <button class="btn btn-primary btn-xs" data-action="load-profile" data-id="${escAttr(p.id)}" title="${escAttr(t('loadIntoCurrentTab'))}">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="5 12 3 12 12 3 21 12 19 12"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>
         </svg>
-        Load
+        ${t('load')}
       </button>
-      <button class="btn btn-danger btn-xs" data-action="delete-profile" data-id="${escAttr(p.id)}" title="Delete profile">
+      <button class="btn btn-danger btn-xs" data-action="delete-profile" data-id="${escAttr(p.id)}" title="${escAttr(t('deleteProfileTitle'))}">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
           <path d="M9 6V4h6v2"/>
@@ -506,8 +716,8 @@ async function loadProfile(id) {
   await loadCookies();
   switchTab('cookies');
   const msg = failed > 0
-    ? `Applied ${applied}, failed ${failed} cookies`
-    : `Profile "${profile.name}" applied (${applied} cookies)`;
+    ? t('profileAppliedSomeFailed', { applied, failed })
+    : t('profileApplied', { name: profile.name, d: applied });
   showToast(msg, failed > 0 ? 'error' : 'success');
 }
 
@@ -517,33 +727,33 @@ async function deleteProfile(id) {
   await chrome.storage.local.set({ profiles });
   renderProfiles();
   updateBadge('profileCount', Object.keys(profiles).length);
-  showToast(`Profile "${name}" deleted`, 'success');
+  showToast(t('profileDeleted', { name }), 'success');
 }
 
 // ── Export ────────────────────────────────
 function exportCurrentCookies() {
   if (cookies.length === 0) {
-    showToast('No cookies to export', 'error');
+    showToast(t('noCookiesToExport'), 'error');
     return;
   }
 
   const blob = new Blob([JSON.stringify(cookies, null, 2)], { type: 'application/json' });
   const ts   = new Date().toISOString().slice(0, 10);
   downloadBlob(blob, `cookies_${currentDomain}_${ts}.json`);
-  showToast(`Exported ${cookies.length} cookies`, 'success');
+  showToast(t('exportedCookies', { count: cookies.length }), 'success');
 }
 
 function exportProfiles() {
   const keys = Object.keys(profiles);
   if (keys.length === 0) {
-    showToast('No profiles to export', 'error');
+    showToast(t('noProfilesToExport'), 'error');
     return;
   }
 
   const blob = new Blob([JSON.stringify({ __type: 'vok-profiles', profiles }, null, 2)], { type: 'application/json' });
   const ts   = new Date().toISOString().slice(0, 10);
   downloadBlob(blob, `profiles_${ts}.json`);
-  showToast(`Exported ${keys.length} profile${keys.length !== 1 ? 's' : ''}`, 'success');
+  showToast(t('exportedProfiles', { count: keys.length }), 'success');
 }
 
 function downloadBlob(blob, filename) {
@@ -581,7 +791,7 @@ function processImportFile(file, type) {
         showImportPreview(items);
       }
     } catch (err) {
-      showToast('Invalid file: ' + err.message, 'error');
+      showToast(t('invalidFile', { s: err.message }), 'error');
     }
   };
   reader.readAsText(file);
@@ -599,12 +809,12 @@ function showImportPreview(items) {
   `).join('');
 
   if (items.length > 50) {
-    list.innerHTML += `<div class="preview-item" style="color:var(--text-muted);font-size:10px;">…and ${items.length - 50} more</div>`;
+    list.innerHTML += `<div class="preview-item" style="color:var(--text-muted);font-size:10px;">${t('andMore', { d: items.length - 50 })}</div>`;
   }
 
   preview.classList.remove('hidden');
   document.getElementById('confirmImportBtn').textContent =
-    importPayload?.type === 'profiles' ? 'Import Profiles' : 'Apply Cookies';
+    importPayload?.type === 'profiles' ? t('importProfiles') : t('applyCookies');
 }
 
 function cancelImport() {
@@ -636,7 +846,7 @@ async function applyImport() {
     cancelImport();
     await loadCookies();
     switchTab('cookies');
-    showToast(failed > 0 ? `Applied ${applied}, failed ${failed}` : `${applied} cookies imported`, failed > 0 ? 'error' : 'success');
+    showToast(failed > 0 ? t('appliedFailed', { applied, failed }) : t('cookiesImported', { count: applied }), failed > 0 ? 'error' : 'success');
     if (currentTab?.id) chrome.tabs.reload(currentTab.id);
 
   } else if (importPayload.type === 'profiles') {
@@ -655,7 +865,7 @@ async function applyImport() {
     renderProfiles();
     updateBadge('profileCount', Object.keys(profiles).length);
     switchTab('profiles');
-    showToast(`${count} profile${count !== 1 ? 's' : ''} imported`, 'success');
+    showToast(t('profilesImported', { count }), 'success');
   }
 }
 
@@ -680,8 +890,8 @@ function updateBadge(id, count) {
 
 function copyToClipboard(text) {
   navigator.clipboard.writeText(text).then(
-    ()  => showToast('Copied!', 'success'),
-    ()  => showToast('Copy failed', 'error'),
+    ()  => showToast(t('toastCopied'), 'success'),
+    ()  => showToast(t('copyFailed'), 'error'),
   );
 }
 

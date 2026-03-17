@@ -2,6 +2,16 @@
 
 All notable changes to VOK Cookies are documented in this file.
 
+## [1.0.1] — 2026-03-17
+
+### Added
+
+- **Language Support**
+  - Added Khmer language support
+  - Added English language support
+  - Added language switcher in the extension popup
+  - Added language support to the extension popup
+
 ---
 
 ## [1.0.0] — 2026-03-16
