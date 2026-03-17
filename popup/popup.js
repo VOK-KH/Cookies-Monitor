@@ -71,6 +71,7 @@ const translations = {
     cookieUpdated: 'Cookie updated',
     updateFailed: 'Update failed: %s',
     profileNameRequired: 'Profile name is required',
+    profileNameDuplicate: 'A profile with this name already exists',
     profileSaved: 'Profile "%s" saved',
     profileApplied: 'Profile "%s" applied (%d cookies)',
     profileAppliedSomeFailed: 'Applied %d, failed %d cookies',
@@ -87,6 +88,7 @@ const translations = {
     load: 'Load',
     delete: 'Delete',
     loadIntoCurrentTab: 'Load into current tab',
+    openInNewTab: 'Open link',
     deleteProfileTitle: 'Delete profile',
     edit: 'Edit',
     session: 'Session',
@@ -151,6 +153,7 @@ const translations = {
     cookieUpdated: 'ខូគីត្រូវបានធ្វើឱ្យទាន់សម័យ',
     updateFailed: 'ធ្វើឱ្យទាន់សម័យមិនបាន: %s',
     profileNameRequired: 'ត្រូវការឈ្មោះប្រវត្តិរូប',
+    profileNameDuplicate: 'មានប្រវត្តិរូបដែលមានឈ្មោះនេះរួចហើយ',
     profileSaved: 'រក្សាប្រវត្តិរូប "%s" រួច',
     profileApplied: 'អនុវត្តប្រវត្តិរូប "%s" (%d ខូគី)',
     profileAppliedSomeFailed: 'អនុវត្ត %d, បរាជ័យ %d ខូគី',
@@ -167,6 +170,7 @@ const translations = {
     load: 'ផ្ទុក',
     delete: 'លុប',
     loadIntoCurrentTab: 'ផ្ទុកចូលផ្ទាំងឥឡូវ',
+    openInNewTab: 'បើកតំណ',
     deleteProfileTitle: 'លុបប្រវត្តិរូប',
     edit: 'កែ',
     session: 'វគ្គ',
@@ -610,6 +614,10 @@ async function saveProfile() {
   const name = document.getElementById('profileNameInput').value.trim();
   if (!name) { showToast(t('profileNameRequired'), 'error'); return; }
 
+  const nameLower = name.toLowerCase();
+  const isDuplicate = Object.values(profiles).some(p => p.name && p.name.toLowerCase() === nameLower);
+  if (isDuplicate) { showToast(t('profileNameDuplicate'), 'error'); return; }
+
   const id = 'p_' + Date.now();
   profiles[id] = {
     id,
@@ -662,9 +670,11 @@ function profileCardHTML(p) {
       <div class="profile-meta">
         <span>${escHtml(p.domain)}</span>
         <span>·</span>
-        <span>${count} cookie${count !== 1 ? 's' : ''}</span>
-        <span>·</span>
-        <span>${date}</span>
+        <a href="${escAttr((p.domain || '').startsWith('http') ? p.domain : 'https://' + p.domain)}" target="_blank" rel="noopener noreferrer" class="profile-open-link" title="${escAttr(t('openInNewTab'))}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+        </a>
       </div>
     </div>
     <div class="profile-actions">
@@ -852,9 +862,12 @@ async function applyImport() {
   } else if (importPayload.type === 'profiles') {
     const incoming = importPayload.data;
     const merged   = { ...profiles };
+    const existingNames = new Set(Object.values(merged).map(p => (p.name || '').toLowerCase()));
     let count = 0;
     for (const [id, p] of Object.entries(incoming)) {
-      // Avoid ID collision
+      const nameLower = (p.name || '').toLowerCase();
+      if (existingNames.has(nameLower)) continue; // skip duplicate name
+      existingNames.add(nameLower);
       const newId = profiles[id] ? 'p_' + Date.now() + '_' + count : id;
       merged[newId] = { ...p, id: newId };
       count++;

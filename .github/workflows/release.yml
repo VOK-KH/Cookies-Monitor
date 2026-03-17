@@ -1,7 +1,3 @@
-# Create GitHub Release when a version tag (v1.0.0, v1.0.1, ...) is pushed.
-# Tag can be pushed manually: git tag v1.0.1 && git push origin v1.0.1
-# Or use the "Create version tag" workflow to auto-create tag from manifest.json.
-
 name: Release
 
 on:
