@@ -24,14 +24,14 @@ jobs:
       - name: Create extension zip
         run: |
           ZIP_NAME="vok-cookies-${{ steps.version.outputs.VERSION }}.zip"
+          # Extension source only — skip README assets (resources/preview, logo)
           zip -r "$ZIP_NAME" \
             manifest.json \
             popup \
             background \
             src \
             icons \
-            resources \
-            -x "*.git*" "*.DS_Store"
+            -x "*.git*" "*.DS_Store" "*__MACOSX*"
           echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
 
       - name: Create GitHub Release

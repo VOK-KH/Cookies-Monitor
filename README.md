@@ -5,8 +5,8 @@
 <h1 align="center">VOK Cookies</h1>
 
 <p align="center">
-  <a href="https://github.com/k10978311-ai/VOK"><img src="https://img.shields.io/github/stars/k10978311-ai/VOK?style=social" alt="GitHub Stars"></a>
-  <a href="https://github.com/k10978311-ai/VOK/releases/latest"><img src="https://img.shields.io/github/release/k10978311-ai/VOK.svg" alt="Latest release"></a>
+  <a href="https://github.com/VOK-KH/Cookies-Monitor"><img src="https://img.shields.io/github/stars/VOK-KH/Cookies-Monitor?style=social" alt="GitHub Stars"></a>
+  <a href="https://github.com/VOK-KH/Cookies-Monitor/releases/latest"><img src="https://img.shields.io/github/release/VOK-KH/Cookies-Monitor.svg" alt="Latest release"></a>
   <a style="text-decoration:none"><img src="https://img.shields.io/badge/version-2.0.0-6B5CF0" alt="v2.0.0"/></a>
   <a style="text-decoration:none"><img src="https://img.shields.io/badge/Chrome-Extension-4285F4?logo=googlechrome&logoColor=white" alt="Chrome"/></a>
   <a style="text-decoration:none"><img src="https://img.shields.io/badge/Manifest-V3-00B16A" alt="Manifest V3"/></a>
@@ -15,6 +15,42 @@
 <p align="center">
   <strong>Manage, profile, export, and protect cookies — with security insights and multi-format transfer.</strong>
 </p>
+
+---
+
+## Preview
+
+<p align="center">
+  <img src="resources/preview/cookies.jpg" alt="Cookies tab" width="280"/>
+</p>
+
+<p align="center">
+  <img src="resources/preview/profiles.jpg" alt="Profiles" width="180"/>
+  &nbsp;
+  <img src="resources/preview/tools.jpg" alt="Tools" width="180"/>
+  &nbsp;
+  <img src="resources/preview/export.jpg" alt="Export sheet" width="180"/>
+</p>
+
+<p align="center">
+  <img src="resources/preview/import.jpg" alt="Import review" width="180"/>
+  &nbsp;
+  <img src="resources/preview/clear.jpg" alt="Clear modal" width="180"/>
+  &nbsp;
+  <img src="resources/preview/drop.jpg" alt="Drop to import" width="180"/>
+  &nbsp;
+  <img src="resources/preview/drop-error.jpg" alt="Unsupported file" width="180"/>
+</p>
+
+| Screen | Description |
+|---|---|
+| **Cookies** | Security score, filters, expandable list, export / import / copy / clear |
+| **Profiles** | Save & switch account cookie sets |
+| **Tools** | Export, import, cleanup, protected cookies |
+| **Export** | JSON · Netscape · Header · CSV |
+| **Import** | Merge / replace with file review |
+| **Clear** | Confirm delete with backup option |
+| **Drop zone** | Drag `.json` / Netscape `.txt` onto the popup |
 
 ---
 
@@ -47,6 +83,7 @@ src/                         # shared modules
   utils.js
 icons/
 resources/
+  preview/                   # README screenshots
 ```
 
 ---
