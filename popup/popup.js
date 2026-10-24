@@ -1,942 +1,1430 @@
-/* ─────────────────────────────────────────
-   VOK Cookies – Popup Script
-───────────────────────────────────────── */
-
 'use strict';
 
-// ── State ────────────────────────────────
-let currentTab    = null;
-let currentUrl    = '';
-let currentDomain = '';
-let cookies       = [];
-let profiles      = {};
-let importPayload = null;  // { type: 'cookies'|'profiles', data }
-let currentLang   = 'en';
+import { t, setLangState, applyDomTranslations } from '../src/i18n.js';
+import {
+  escHtml,
+  escAttr,
+  plural,
+  downloadText,
+  domainInitial,
+  isSessionCookie,
+  isExpiredCookie,
+  expLabel,
+  expLong,
+  relativeTime,
+} from '../src/utils.js';
+import { annotateTracking, isTrackingCookie } from '../src/trackers.js';
+import { computeSecurityScore, buildSecurityRows } from '../src/security.js';
+import {
+  EXPORT_FORMATS,
+  serializeCookies,
+  filterExportList,
+  parseImport,
+  fileMeta,
+} from '../src/formats.js';
+import {
+  getProfiles,
+  setProfiles,
+  getProtectedNames,
+  setProtectedNames,
+  getLang as loadLang,
+  setLang as saveLang,
+  getActiveProfileId,
+  setActiveProfileId,
+} from '../src/storage.js';
+import {
+  getTabCookies,
+  setCookieOnUrl,
+  removeCookieOnUrl,
+  applyCookies,
+  removeCookies,
+} from '../src/cookies-api.js';
 
-// ── Translations (English / Khmer) ────────
-const translations = {
-  en: {
-    loading: 'Loading…',
-    refreshCookies: 'Refresh cookies',
-    navTransfer: 'Transfer',
-    navProfiles: 'Profiles',
-    navCookies: 'Cookies',
-    searchPlaceholder: 'Search cookies…',
-    add: 'Add',
-    newCookie: 'New Cookie',
-    name: 'Name',
-    value: 'Value',
-    path: 'Path',
-    expiresLabel: 'Expires (days, blank = session)',
-    secure: 'Secure',
-    httpOnly: 'HttpOnly',
-    sameSiteStrict: 'SameSite Strict',
-    cancel: 'បោះបង់',
-    save: 'រក្សា',
-    saveCookie: 'រក្សាខូគី',
-    noCookiesFound: 'No cookies found',
-    noCookiesDesc: 'This page has no cookies or they are filtered out',
-    savedProfiles: 'Saved Profiles',
-    saveCurrent: 'Save Current',
-    saveProfile: 'Save Profile',
-    profileName: 'Profile Name',
-    profileNamePlaceholder: 'e.g. Work Account, Dev Session…',
-    noProfilesYet: 'No profiles yet',
-    noProfilesDesc: 'Save your current cookies as a reusable profile',
-    exportHeading: 'Export',
-    importHeading: 'Import',
-    currentTabCookies: 'Current Tab Cookies',
-    currentTabCookiesDesc: 'Download cookies for this domain as JSON',
-    allProfiles: 'All Saved Profiles',
-    allProfilesDesc: 'Bundle all profiles into one JSON file',
-    exportBtn: 'Export',
-    cookiesFromJson: 'Cookies from JSON',
-    cookiesFromJsonDesc: 'Load cookies into the current tab',
-    profilesFromJson: 'Profiles from JSON',
-    profilesFromJsonDesc: 'Restore profiles from a previous export',
-    dropHint: 'or drag a .json file here',
-    chooseFile: 'Choose File',
-    preview: 'Preview',
-    apply: 'Apply',
-    applyCookies: 'Apply Cookies',
-    importProfiles: 'Import Profiles',
-    toastCopied: 'Copied!',
-    copyFailed: 'Copy failed',
-    cookieNameRequired: 'Cookie name is required',
-    cookieSaved: 'Cookie "%s" saved',
-    saveFailed: 'Failed to save: %s',
-    cookieDeleted: '"%s" deleted',
-    deleteFailed: 'Delete failed: %s',
-    nameCannotBeEmpty: 'Name cannot be empty',
-    cookieUpdated: 'Cookie updated',
-    updateFailed: 'Update failed: %s',
-    profileNameRequired: 'Profile name is required',
-    profileNameDuplicate: 'A profile with this name already exists',
-    profileSaved: 'Profile "%s" saved',
-    profileApplied: 'Profile "%s" applied (%d cookies)',
-    profileAppliedSomeFailed: 'Applied %d, failed %d cookies',
-    profileDeleted: 'Profile "%s" deleted',
-    noCookiesToExport: 'No cookies to export',
-    exportedCookies: 'Exported %d cookies',
-    noProfilesToExport: 'No profiles to export',
-    exportedProfiles: 'Exported %d profile(s)',
-    invalidFile: 'Invalid file: %s',
-    dropJsonFile: 'Please drop a .json file',
-    cookiesRefreshed: 'Cookies refreshed',
-    initFailed: 'Failed to initialize: %s',
-    copyValue: 'Copy value',
-    load: 'Load',
-    delete: 'Delete',
-    loadIntoCurrentTab: 'Load into current tab',
-    openInNewTab: 'Open link',
-    deleteProfileTitle: 'Delete profile',
-    edit: 'Edit',
-    session: 'Session',
-    andMore: '…and %d more',
-    cookiesImported: '%d cookies imported',
-    appliedFailed: 'Applied %d, failed %d',
-    profilesImported: '%d profile(s) imported',
-  },
-  km: {
-    loading: 'កំពុងផ្ទុក…',
-    refreshCookies: 'ធ្វើឱ្យខូគីស្រស់',
-    navTransfer: 'ផ្ទេរ',
-    navProfiles: 'ប្រវត្តិរូប',
-    navCookies: 'ខូគី',
-    searchPlaceholder: 'ស្វែងរកខូគី…',
-    add: 'បន្ថែម',
-    newCookie: 'ខូគីថ្មី',
-    name: 'ឈ្មោះ',
-    value: 'តម្លៃ',
-    path: 'ផ្លូវ',
-    expiresLabel: 'ផុតកំណត់ (ថ្ងៃ, ទទេ = វគ្គ)',
-    secure: 'Secure',
-    httpOnly: 'HttpOnly',
-    sameSiteStrict: 'SameSite Strict',
-    cancel: 'បោះបង់',
-    save: 'រក្សា',
-    saveCookie: 'រក្សាខូគី',
-    noCookiesFound: 'រកមិនឃើញខូគី',
-    noCookiesDesc: 'ទំព័រនេះគ្មានខូគី ឬត្រូវច្រោះចេញ',
-    savedProfiles: 'ប្រវត្តិរូបរក្សាទុក',
-    saveCurrent: 'រក្សាឥឡូវ',
-    saveProfile: 'រក្សាប្រវត្តិរូប',
-    profileName: 'ឈ្មោះប្រវត្តិរូប',
-    profileNamePlaceholder: 'ឧ. គណនីការងារ, វគ្គ Dev…',
-    noProfilesYet: 'មិនទាន់មានប្រវត្តិរូប',
-    noProfilesDesc: 'រក្សាខូគីឥឡូវជាប្រវត្តិរូបដែលប្រើឡើងវិញបាន',
-    exportHeading: 'នាំចេញ',
-    importHeading: 'នាំចូល',
-    currentTabCookies: 'ខូគីផ្ទាំងឥឡូវ',
-    currentTabCookiesDesc: 'ទាញយកខូគីដែននេះជា JSON',
-    allProfiles: 'ប្រវត្តិរូបរក្សាទុកទាំងអស់',
-    allProfilesDesc: 'រួមប្រវត្តិរូបទាំងអស់ជាឯកសារ JSON មួយ',
-    exportBtn: 'នាំចេញ',
-    cookiesFromJson: 'ខូគីពី JSON',
-    cookiesFromJsonDesc: 'ផ្ទុកខូគីចូលផ្ទាំងឥឡូវ',
-    profilesFromJson: 'ប្រវត្តិរូបពី JSON',
-    profilesFromJsonDesc: 'ស្តារប្រវត្តិរូបពីការនាំចេញមុន',
-    dropHint: 'ឬអូសឯកសារ .json មកទីនេះ',
-    chooseFile: 'ជ្រើសរើសឯកសារ',
-    preview: 'មុនមើល',
-    apply: 'អនុវត្ត',
-    applyCookies: 'អនុវត្តខូគី',
-    importProfiles: 'នាំចូលប្រវត្តិរូប',
-    toastCopied: 'ចម្លងហើយ!',
-    copyFailed: 'ចម្លងមិនបាន',
-    cookieNameRequired: 'ត្រូវការឈ្មោះខូគី',
-    cookieSaved: 'រក្សាខូគី "%s" រួច',
-    saveFailed: 'រក្សាមិនបាន: %s',
-    cookieDeleted: '"%s" ត្រូវបានលុប',
-    deleteFailed: 'លុបមិនបាន: %s',
-    nameCannotBeEmpty: 'ឈ្មោះមិនអាចទទេ',
-    cookieUpdated: 'ខូគីត្រូវបានធ្វើឱ្យទាន់សម័យ',
-    updateFailed: 'ធ្វើឱ្យទាន់សម័យមិនបាន: %s',
-    profileNameRequired: 'ត្រូវការឈ្មោះប្រវត្តិរូប',
-    profileNameDuplicate: 'មានប្រវត្តិរូបដែលមានឈ្មោះនេះរួចហើយ',
-    profileSaved: 'រក្សាប្រវត្តិរូប "%s" រួច',
-    profileApplied: 'អនុវត្តប្រវត្តិរូប "%s" (%d ខូគី)',
-    profileAppliedSomeFailed: 'អនុវត្ត %d, បរាជ័យ %d ខូគី',
-    profileDeleted: 'ប្រវត្តិរូប "%s" ត្រូវបានលុប',
-    noCookiesToExport: 'គ្មានខូគីដើម្បីនាំចេញ',
-    exportedCookies: 'បាននាំចេញ %d ខូគី',
-    noProfilesToExport: 'គ្មានប្រវត្តិរូបដើម្បីនាំចេញ',
-    exportedProfiles: 'បាននាំចេញ %d ប្រវត្តិរូប',
-    invalidFile: 'ឯកសារមិនត្រឹមត្រូវ: %s',
-    dropJsonFile: 'សូមដាក់ឯកសារ .json',
-    cookiesRefreshed: 'ខូគីស្រស់ហើយ',
-    initFailed: 'ចាប់ផ្តើមមិនបាន: %s',
-    copyValue: 'ចម្លងតម្លៃ',
-    load: 'ផ្ទុក',
-    delete: 'លុប',
-    loadIntoCurrentTab: 'ផ្ទុកចូលផ្ទាំងឥឡូវ',
-    openInNewTab: 'បើកតំណ',
-    deleteProfileTitle: 'លុបប្រវត្តិរូប',
-    edit: 'កែ',
-    session: 'វគ្គ',
-    andMore: '…និង %d ទៀត',
-    cookiesImported: 'នាំចូល %d ខូគី',
-    appliedFailed: 'អនុវត្ត %d, បរាជ័យ %d',
-    profilesImported: 'នាំចូល %d ប្រវត្តិរូប',
-  },
+/* ── State ──────────────────────────────── */
+const state = {
+  tab: 'cookies',
+  filter: 'all',
+  query: '',
+  expandedKey: null,
+  cookies: [],
+  profiles: {},
+  protected: new Set(),
+  activeProfileId: null,
+  modal: null, // export | clear | import | security | protected | edit | saveProfile
+  exportFormat: 'json',
+  exportScope: 'site',
+  optHttpOnly: true,
+  optExpired: false,
+  backup: true,
+  importMode: 'merge',
+  importPayload: null,
+  clearMode: 'all', // all | one
+  targetName: null,
+  editCookie: null,
+  drag: null, // valid | invalid | null
+  dropErrorName: '',
 };
 
-function t(key, opts = {}) {
-  const s = (translations[currentLang] && translations[currentLang][key]) || translations.en[key] || key;
-  if (typeof s !== 'string') return key;
-  const numValues = opts.values || (opts.applied !== undefined && opts.failed !== undefined ? [opts.applied, opts.failed] : null);
-  let numIndex = 0;
-  return s
-    .replace(/%s/g, () => opts.s ?? opts.name ?? '')
-    .replace(/%d/g, () => String(numValues ? (numValues[numIndex++] ?? 0) : (opts.d ?? opts.count ?? 0)));
-}
+let currentTab = null;
+let currentUrl = '';
+let currentDomain = '';
+let isHttps = true;
+let toastTimer = null;
 
-function applyTranslations(lang) {
-  currentLang = lang;
-  document.documentElement.lang = lang === 'km' ? 'km' : 'en';
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    el.textContent = t(el.getAttribute('data-i18n'));
-  });
-  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-    const key = el.getAttribute('data-i18n-placeholder');
-    if (key) el.placeholder = t(key);
-  });
-  document.querySelectorAll('[data-i18n-title]').forEach(el => {
-    const key = el.getAttribute('data-i18n-title');
-    if (key) el.title = t(key);
-  });
-  document.querySelectorAll('.lang-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.lang === lang);
-  });
-}
-
-// ── Init ─────────────────────────────────
+/* ── Boot ───────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => init());
 
 async function init() {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     currentTab = tab;
-    currentUrl = tab.url || '';
-
+    currentUrl = tab?.url || '';
     try {
-      const parsed  = new URL(currentUrl);
+      const parsed = new URL(currentUrl);
       currentDomain = parsed.hostname;
+      isHttps = parsed.protocol === 'https:';
     } catch {
       currentDomain = 'unknown';
+      isHttps = false;
     }
 
-    const { lang } = await chrome.storage.local.get('lang');
-    currentLang = lang === 'km' ? 'km' : 'en';
-    applyTranslations(currentLang);
+    setLangState(await loadLang());
+    applyDomTranslations();
 
-    document.getElementById('currentDomain').textContent = currentDomain || 'unknown';
+    state.profiles = await getProfiles();
+    state.protected = await getProtectedNames(currentDomain);
+    state.activeProfileId = await getActiveProfileId();
 
-    await loadCookies();
-    await loadProfiles();
-    setupListeners();
+    document.getElementById('currentDomain').textContent = currentDomain;
+    setSiteFavicon(tab);
+
+    await refreshCookies();
+    bindGlobal();
+    render();
   } catch (err) {
     showToast(t('initFailed', { s: err.message }), 'error');
   }
 }
 
-// ── Data loaders ─────────────────────────
-async function loadCookies() {
-  try {
-    cookies = await chrome.cookies.getAll({ url: currentUrl });
-  } catch {
-    cookies = [];
+async function refreshCookies() {
+  const raw = await getTabCookies(currentUrl);
+  state.cookies = annotateTracking(raw).map((c) => ({
+    ...c,
+    protected: state.protected.has(c.name),
+    tracking: isTrackingCookie(c),
+  }));
+}
+
+/* ── Favicon ────────────────────────────── */
+function faviconCandidates(tab) {
+  const urls = [];
+  if (tab?.favIconUrl && !tab.favIconUrl.startsWith('chrome://')) {
+    urls.push(tab.favIconUrl);
   }
-  renderCookies();
-  updateBadge('cookieCount', cookies.length);
+  try {
+    const origin = new URL(currentUrl).origin;
+    urls.push(`${origin}/favicon.ico`);
+    urls.push(`${origin}/favicon.png`);
+  } catch {
+    /* ignore */
+  }
+  if (currentDomain && currentDomain !== 'unknown') {
+    const host = currentDomain.replace(/^www\./, '');
+    urls.push(`https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=64`);
+    urls.push(`https://icons.duckduckgo.com/ip3/${encodeURIComponent(host)}.ico`);
+  }
+  return [...new Set(urls)];
 }
 
-async function loadProfiles() {
-  const stored = await chrome.storage.local.get('profiles');
-  profiles = stored.profiles || {};
-  renderProfiles();
-  updateBadge('profileCount', Object.keys(profiles).length);
+function showFaviconFallback() {
+  const avatar = document.getElementById('siteAvatar');
+  const img = document.getElementById('siteFavicon');
+  const letter = document.getElementById('siteAvatarLetter');
+  if (!avatar || !img || !letter) return;
+  avatar.classList.remove('has-favicon');
+  img.classList.add('hidden');
+  img.removeAttribute('src');
+  letter.textContent = domainInitial(currentDomain);
+  avatar.title = currentDomain || '';
 }
 
-// ── Tab navigation ────────────────────────
-function setupListeners() {
-  // Nav tabs
-  document.querySelectorAll('.nav-tab').forEach(btn => {
-    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
-  });
+function setSiteFavicon(tab) {
+  const avatar = document.getElementById('siteAvatar');
+  const img = document.getElementById('siteFavicon');
+  const letter = document.getElementById('siteAvatarLetter');
+  if (!avatar || !img || !letter) return;
 
-  // Language switcher
-  document.querySelectorAll('.lang-btn').forEach(btn => {
+  letter.textContent = domainInitial(currentDomain);
+  avatar.title = currentDomain || '';
+  avatar.classList.remove('has-favicon');
+  img.classList.add('hidden');
+
+  const candidates = faviconCandidates(tab);
+  if (!candidates.length) return;
+
+  let i = 0;
+  const tryNext = () => {
+    if (i >= candidates.length) {
+      showFaviconFallback();
+      return;
+    }
+    const url = candidates[i++];
+    img.onload = () => {
+      // Reject tiny/blank placeholders (1x1)
+      if (img.naturalWidth < 2 || img.naturalHeight < 2) {
+        tryNext();
+        return;
+      }
+      avatar.classList.add('has-favicon');
+      img.classList.remove('hidden');
+      avatar.title = currentDomain || '';
+    };
+    img.onerror = () => tryNext();
+    img.src = url;
+  };
+  tryNext();
+}
+
+/* ── Events ─────────────────────────────── */
+function bindGlobal() {
+  document.querySelectorAll('.tab-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
-      const lang = btn.dataset.lang === 'km' ? 'km' : 'en';
-      currentLang = lang;
-      chrome.storage.local.set({ lang });
-      applyTranslations(lang);
-      renderCookies(document.getElementById('cookieSearch')?.value || '');
-      renderProfiles();
+      state.tab = btn.dataset.tab;
+      state.expandedKey = null;
+      closeModal();
+      render();
     });
   });
 
-  // Refresh
+  document.querySelectorAll('.lang-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const lang = btn.dataset.lang === 'km' ? 'km' : 'en';
+      setLangState(lang);
+      await saveLang(lang);
+      applyDomTranslations();
+      render();
+    });
+  });
+
   document.getElementById('refreshBtn').addEventListener('click', async () => {
-    await loadCookies();
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab) {
+      currentTab = tab;
+      setSiteFavicon(tab);
+    }
+    await refreshCookies();
+    render();
     showToast(t('cookiesRefreshed'), 'success');
   });
 
-  // ── Cookies tab
-  document.getElementById('cookieSearch').addEventListener('input', e => filterCookies(e.target.value));
-  document.getElementById('addCookieBtn').addEventListener('click', () => toggleForm('addCookieForm'));
-  document.getElementById('cancelAddBtn').addEventListener('click', () => hideForm('addCookieForm'));
-  document.getElementById('saveNewCookieBtn').addEventListener('click', saveNewCookie);
-
-  // ── Profiles tab
-  document.getElementById('saveProfileBtn').addEventListener('click', () => toggleForm('saveProfileForm'));
-  document.getElementById('cancelProfileBtn').addEventListener('click', () => hideForm('saveProfileForm'));
-  document.getElementById('confirmSaveProfileBtn').addEventListener('click', saveProfile);
-  document.getElementById('profileNameInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') saveProfile();
+  document.getElementById('siteAvatar')?.addEventListener('click', () => {
+    if (!currentDomain || currentDomain === 'unknown') return;
+    const href = (currentUrl && /^https?:/i.test(currentUrl))
+      ? new URL(currentUrl).origin
+      : `https://${currentDomain}`;
+    chrome.tabs.create({ url: href });
   });
 
-  // ── Transfer tab
-  document.getElementById('exportCurrentBtn').addEventListener('click', exportCurrentCookies);
-  document.getElementById('exportProfilesBtn').addEventListener('click', exportProfiles);
-  document.getElementById('importCookiesFile').addEventListener('change', e => handleImportFile(e, 'cookies'));
-  document.getElementById('importProfilesFile').addEventListener('change', e => handleImportFile(e, 'profiles'));
-  document.getElementById('cancelImportBtn').addEventListener('click', cancelImport);
-  document.getElementById('confirmImportBtn').addEventListener('click', applyImport);
+  document.getElementById('cookieSearch').addEventListener('input', (e) => {
+    state.query = e.target.value;
+    renderCookiesOnly();
+  });
 
-  setupDropZones();
+  document.getElementById('openExportBtn').addEventListener('click', () => openModal('export'));
+  document.getElementById('toolsExportBtn').addEventListener('click', () => openModal('export'));
+  document.getElementById('scorePill').addEventListener('click', () => openModal('security'));
+  document.getElementById('openSaveProfileBtn').addEventListener('click', () => openModal('saveProfile'));
+  document.getElementById('openProtectedBtn').addEventListener('click', () => openModal('protected'));
+  const openClearAll = () => {
+    state.clearMode = 'all';
+    state.targetName = null;
+    openModal('clear');
+  };
+  document.getElementById('clearAllBtn')?.addEventListener('click', openClearAll);
+  document.getElementById('clearAllQuickBtn')?.addEventListener('click', openClearAll);
+  document.getElementById('cleanExpiredBtn').addEventListener('click', cleanExpired);
+  document.getElementById('cleanTrackersBtn').addEventListener('click', cleanTrackers);
+  document.getElementById('copyAllBtn').addEventListener('click', copyAll);
+
+  document.getElementById('importFileQuick').addEventListener('change', onPickFile);
+  document.getElementById('importFileTools').addEventListener('change', onPickFile);
+  document.getElementById('scrim').addEventListener('click', closeModal);
+
+  setupDragDrop();
 }
 
-// ── Drag-and-drop import ─────────────────
-function setupDropZones() {
-  const zones = [
-    { el: document.getElementById('dropZoneCookies'), type: 'cookies' },
-    { el: document.getElementById('dropZoneProfiles'), type: 'profiles' },
-  ];
+let dropErrorTimer = null;
 
-  for (const { el, type } of zones) {
-    if (!el) continue;
-    el.addEventListener('dragover', e => {
-      e.preventDefault();
-      e.stopPropagation();
-      e.dataTransfer.dropEffect = 'copy';
-      el.classList.add('drag-over');
+function setupDragDrop() {
+  const app = document.getElementById('app');
+  let dragDepth = 0;
+
+  const setDragState = (mode, fileName = '') => {
+    clearTimeout(dropErrorTimer);
+    state.drag = mode;
+    state.dropErrorName = fileName || '';
+    renderDrag();
+  };
+
+  app.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+    dragDepth++;
+    const ok = isDragTypeOk(e.dataTransfer);
+    setDragState(ok ? 'valid' : 'invalid');
+  });
+  app.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    const ok = isDragTypeOk(e.dataTransfer);
+    e.dataTransfer.dropEffect = ok ? 'copy' : 'none';
+    if (state.drag !== (ok ? 'valid' : 'invalid')) {
+      setDragState(ok ? 'valid' : 'invalid');
+    }
+  });
+  app.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (dragDepth === 0) setDragState(null);
+  });
+  app.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dragDepth = 0;
+    const file = e.dataTransfer.files?.[0];
+    if (!file) {
+      setDragState(null);
+      return;
+    }
+    if (!isImportableName(file.name)) {
+      setDragState('invalid', file.name);
+      showToast(t('dropJsonFile'), 'error');
+      dropErrorTimer = setTimeout(() => setDragState(null), 1800);
+      return;
+    }
+    setDragState(null);
+    readImportFile(file);
+  });
+}
+
+/** Best-effort type check while dragging (filename often unavailable until drop). */
+function isDragTypeOk(dt) {
+  if (!dt) return true;
+  const items = dt.items ? [...dt.items] : [];
+  const fileItems = items.filter((i) => i.kind === 'file');
+  if (fileItems.length) {
+    return fileItems.some((item) => {
+      const type = String(item.type || '').toLowerCase();
+      if (!type) return true; // browser withheld MIME — show valid until drop
+      return (
+        type.includes('json') ||
+        type === 'text/plain' ||
+        type === 'text/csv' ||
+        type.startsWith('text/')
+      );
     });
-    el.addEventListener('dragleave', e => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (!el.contains(e.relatedTarget)) el.classList.remove('drag-over');
+  }
+  const types = dt.types ? [...dt.types] : [];
+  return types.includes('Files') || types.includes('application/json') || types.includes('text/plain');
+}
+
+function isImportableName(name) {
+  const n = String(name || '').toLowerCase();
+  return n.endsWith('.json') || n.endsWith('.txt');
+}
+
+function onPickFile(e) {
+  const file = e.target.files?.[0];
+  e.target.value = '';
+  if (file) readImportFile(file);
+}
+
+function sizeText(bytes) {
+  if (bytes == null) return '';
+  return bytes < 1024 ? bytes + ' B' : (bytes / 1024).toFixed(1) + ' KB';
+}
+
+function readImportFile(file) {
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    showToast(t('fileTooLarge'), 'error');
+    return;
+  }
+  if (!isImportableName(file.name)) {
+    showToast(t('dropJsonFile'), 'error');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    const parsed = parseImport(reader.result);
+    if (!parsed) {
+      showToast(t('invalidFile', { s: t('fileNotCookieExport') }), 'error');
+      return;
+    }
+    state.importPayload = {
+      ...parsed,
+      name: file.name,
+      size: file.size,
+    };
+    state.importMode = 'merge';
+    openModal('import');
+  };
+  reader.onerror = () => showToast(t('invalidFile', { s: 'read error' }), 'error');
+  reader.readAsText(file);
+}
+
+/* ── Modal helpers ──────────────────────── */
+function openModal(name) {
+  state.modal = name;
+  render();
+}
+
+function closeModal() {
+  state.modal = null;
+  state.importPayload = null;
+  state.editCookie = null;
+  render();
+}
+
+/* ── Render ─────────────────────────────── */
+function render() {
+  applyDomTranslations();
+  document.querySelectorAll('.tab-btn').forEach((b) => {
+    b.classList.toggle('active', b.dataset.tab === state.tab);
+  });
+  document.querySelectorAll('.tab-panel').forEach((p) => {
+    p.classList.toggle('active', p.id === 'tab-' + state.tab);
+  });
+
+  const stats = computeSecurityScore(state.cookies, { isHttps });
+  updateSiteCard(stats);
+  updateToolsMeta(stats);
+  renderFilters(stats);
+  renderCookiesOnly();
+  renderProfiles();
+  renderSheet(stats);
+  renderDrag();
+}
+
+function renderCookiesOnly() {
+  const list = document.getElementById('cookieList');
+  const empty = document.getElementById('cookiesEmpty');
+  const q = state.query.trim().toLowerCase();
+  const visible = state.cookies.filter((c) => {
+    const matchF =
+      state.filter === 'all'
+        ? true
+        : state.filter === 'session'
+          ? isSessionCookie(c)
+          : state.filter === 'secure'
+            ? c.secure
+            : c.tracking;
+    const matchQ =
+      !q ||
+      c.name.toLowerCase().includes(q) ||
+      String(c.value || '').toLowerCase().includes(q);
+    return matchF && matchQ;
+  });
+
+  if (!visible.length) {
+    list.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+  list.innerHTML = visible.map((c) => cookieRowHTML(c)).join('');
+
+  list.querySelectorAll('[data-toggle]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.toggle;
+      state.expandedKey = state.expandedKey === key ? null : key;
+      renderCookiesOnly();
     });
-    el.addEventListener('drop', e => {
-      e.preventDefault();
+  });
+  list.querySelectorAll('[data-act]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      el.classList.remove('drag-over');
-      const file = e.dataTransfer.files[0];
-      if (!file) return;
-      if (!file.name.toLowerCase().endsWith('.json')) {
-        showToast(t('dropJsonFile'), 'error');
-        return;
-      }
-      processImportFile(file, type);
+      onCookieAction(btn.dataset.act, btn.dataset.name, btn);
     });
+  });
+}
+
+function cookieRowHTML(c) {
+  const key = c.name;
+  const open = state.expandedKey === key;
+  const expired = isExpiredCookie(c);
+  const preview =
+    String(c.value || '').length > 38
+      ? String(c.value).slice(0, 38) + '…'
+      : c.value || '(empty)';
+
+  return `
+  <div class="cookie-row${open ? ' expanded' : ''}">
+    <button type="button" class="cookie-header" data-toggle="${escAttr(key)}" aria-expanded="${open}">
+      <div class="cookie-main">
+        <div class="cookie-name-row">
+          <span class="cookie-name">${escHtml(c.name)}</span>
+          ${c.protected ? `<svg style="color:var(--ok)" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Protected"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path></svg>` : ''}
+        </div>
+        <div class="cookie-preview">${escHtml(preview)}</div>
+      </div>
+      ${c.tracking ? `<span class="badge-track">Tracking</span>` : ''}
+      <span class="cookie-meta${expired ? ' expired' : ''}">${escHtml(expLabel(c))}</span>
+      <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+    </button>
+    ${
+      open
+        ? `<div class="cookie-detail">
+      <div style="display:flex;align-items:center;gap:8px;padding:0 2px">
+        <span class="detail-expires">${escHtml(expLong(c))}</span>
+      </div>
+      <div class="flag-pills">
+        <span class="flag-pill${c.secure ? ' on' : ''}">Secure</span>
+        <span class="flag-pill${c.httpOnly ? ' on' : ''}">HttpOnly</span>
+        <span class="flag-pill">${escHtml(c.sameSite || 'unspecified')}</span>
+        <span class="flag-pill">${escHtml(c.path || '/')}</span>
+      </div>
+      <div class="value-box">${escHtml(c.value || '(empty)')}</div>
+      <div class="detail-actions">
+        <button type="button" class="detail-act copy-btn" data-act="copy" data-name="${escAttr(c.name)}">
+          <span class="copy-btn-icon" aria-hidden="true">
+            <svg class="icon-copy" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
+            <svg class="icon-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+          </span>
+          ${t('copy')}
+        </button>
+        <button type="button" class="detail-act" data-act="edit" data-name="${escAttr(c.name)}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+          ${t('edit')}
+        </button>
+        <button type="button" class="detail-act" data-act="protect" data-name="${escAttr(c.name)}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path></svg>
+          ${c.protected ? t('unprotect') : t('protect')}
+        </button>
+        <button type="button" class="detail-act danger" data-act="delete" data-name="${escAttr(c.name)}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+          ${t('delete')}
+        </button>
+      </div>
+    </div>`
+        : ''
+    }
+  </div>`;
+}
+
+async function onCookieAction(act, name, btn) {
+  const cookie = state.cookies.find((c) => c.name === name);
+  if (!cookie && act !== 'delete') return;
+
+  if (act === 'copy') {
+    await copyText(cookie.name + '=' + cookie.value, t('copiedName', { name: cookie.name }), btn);
+    return;
+  }
+  if (act === 'edit') {
+    state.editCookie = { ...cookie };
+    openModal('edit');
+    return;
+  }
+  if (act === 'protect') {
+    if (state.protected.has(name)) {
+      state.protected.delete(name);
+      showToast(t('unprotectedToast', { name }), 'success');
+    } else {
+      state.protected.add(name);
+      showToast(t('protectedToast', { name }), 'success');
+    }
+    await setProtectedNames(currentDomain, state.protected);
+    await refreshCookies();
+    render();
+    return;
+  }
+  if (act === 'delete') {
+    state.clearMode = 'one';
+    state.targetName = name;
+    openModal('clear');
   }
 }
 
-function switchTab(tabId) {
-  document.querySelectorAll('.nav-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tabId));
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tabId));
+function renderFilters(stats) {
+  const defs = [
+    ['all', t('filterAll'), stats.total],
+    ['session', t('filterSession'), stats.sessionN],
+    ['secure', t('filterSecure'), stats.secureN],
+    ['tracking', t('filterTracking'), stats.trackN],
+  ];
+  const el = document.getElementById('filters');
+  el.innerHTML = defs
+    .map(
+      ([id, label, count]) => `
+    <button type="button" class="filter-btn${state.filter === id ? ' active' : ''}" data-filter="${id}">
+      ${escHtml(label)} <span class="count">${count}</span>
+    </button>`,
+    )
+    .join('');
+  el.querySelectorAll('[data-filter]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.filter = btn.dataset.filter;
+      render();
+    });
+  });
 }
 
-// ── Cookie rendering ──────────────────────
-function renderCookies(filter = '') {
-  const list = document.getElementById('cookieList');
-  const empty = document.getElementById('cookiesEmpty');
-  const q = filter.toLowerCase();
-
-  const filtered = cookies.filter(c =>
-    !q || c.name.toLowerCase().includes(q) || c.value.toLowerCase().includes(q)
+function updateSiteCard(stats) {
+  const domainEl = document.getElementById('currentDomain');
+  if (domainEl && currentDomain) domainEl.textContent = currentDomain;
+  document.getElementById('siteCount').textContent = plural(
+    stats.total,
+    t('cookie'),
+    t('cookies'),
   );
+  const pill = document.getElementById('scorePill');
+  pill.className = 'score-pill ' + stats.tone;
+  document.getElementById('scoreLabel').textContent = stats.grade;
+  const bar = document.getElementById('scoreBar');
+  bar.className = 'score-bar ' + stats.tone;
+  document.getElementById('scoreFill').style.width = stats.score + '%';
+  const conn = document.getElementById('statConn');
+  conn.textContent = isHttps ? 'HTTPS' : 'HTTP';
+  conn.className = 'stat-value ' + (isHttps ? 'ok' : 'danger');
 
-  if (filtered.length === 0) {
+  document.getElementById('statSecure').textContent =
+    stats.total ? `${stats.secureN}/${stats.total}` : '0';
+  document.getElementById('statHttp').textContent = String(stats.httpN);
+
+  const track = document.getElementById('statTrack');
+  track.textContent = String(stats.trackN);
+  track.className = 'stat-value' + (stats.trackN > 0 ? ' warn' : '');
+}
+
+function updateToolsMeta(stats) {
+  document.getElementById('expiredMeta').textContent = String(stats.expiredN);
+  document.getElementById('trackerMeta').textContent = String(stats.trackN);
+  document.getElementById('protectedMeta').textContent =
+    state.protected.size + ' protected';
+}
+
+function renderProfiles() {
+  const list = document.getElementById('profileList');
+  const empty = document.getElementById('profilesEmpty');
+  const keys = Object.keys(state.profiles);
+
+  if (!keys.length) {
     list.innerHTML = '';
     empty.classList.remove('hidden');
     return;
   }
   empty.classList.add('hidden');
 
-  list.innerHTML = filtered.map((c, i) => cookieItemHTML(c, i)).join('');
+  const colors = ['', 'ok', 'warn'];
+  list.innerHTML = keys
+    .map((id, i) => {
+      const p = state.profiles[id];
+      const active = state.activeProfileId === id;
+      const count = active ? state.cookies.length : (p.cookies || []).length;
+      const sub = `${escHtml(p.domain || currentDomain)} · ${plural(count, t('cookie'), t('cookies'))} · ${active ? t('live') : relativeTime(p.savedAt)}`;
+      return `
+      <div class="profile-row${active ? ' active' : ''}">
+        <div class="profile-avatar ${colors[i % colors.length]}">${escHtml((p.name || '?').charAt(0).toUpperCase())}</div>
+        <div class="profile-info">
+          <div class="profile-name">${escHtml(p.name)}</div>
+          <div class="profile-sub">${sub}</div>
+        </div>
+        ${
+          active
+            ? `<span class="active-pill"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>${t('active')}</span>`
+            : `<button type="button" class="btn-surface" data-switch="${escAttr(id)}">${t('switch')}</button>`
+        }
+        <button type="button" class="btn-xs danger" data-del-profile="${escAttr(id)}" title="${escAttr(t('delete'))}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
+      </div>`;
+    })
+    .join('');
 
-  // Bind item events
-  list.querySelectorAll('.cookie-item-header').forEach(hdr => {
-    hdr.addEventListener('click', () => toggleCookieItem(hdr.closest('.cookie-item')));
+  list.querySelectorAll('[data-switch]').forEach((btn) => {
+    btn.addEventListener('click', () => switchProfile(btn.dataset.switch));
   });
-
-  list.querySelectorAll('[data-action="copy-value"]').forEach(btn => {
-    btn.addEventListener('click', e => { e.stopPropagation(); copyToClipboard(btn.dataset.value); });
-  });
-
-  list.querySelectorAll('[data-action="edit"]').forEach(btn => {
-    btn.addEventListener('click', e => { e.stopPropagation(); startEditCookie(btn.dataset.name); });
-  });
-
-  list.querySelectorAll('[data-action="delete"]').forEach(btn => {
-    btn.addEventListener('click', e => { e.stopPropagation(); deleteCookie(btn.dataset.name); });
-  });
-
-  list.querySelectorAll('[data-action="save-edit"]').forEach(btn => {
-    btn.addEventListener('click', () => saveEditCookie(btn.dataset.name));
-  });
-
-  list.querySelectorAll('[data-action="cancel-edit"]').forEach(btn => {
-    btn.addEventListener('click', () => cancelEditCookie(btn.dataset.name));
+  list.querySelectorAll('[data-del-profile]').forEach((btn) => {
+    btn.addEventListener('click', () => deleteProfile(btn.dataset.delProfile));
   });
 }
 
-function cookieItemHTML(c, idx) {
-  const expiry = c.expirationDate
-    ? new Date(c.expirationDate * 1000).toLocaleString()
-    : t('session');
+function renderDrag() {
+  const show = state.drag === 'valid' || state.drag === 'invalid';
+  document.getElementById('dropScrim')?.classList.toggle('hidden', !show);
+  document.getElementById('dropValid')?.classList.toggle('hidden', state.drag !== 'valid');
+  document.getElementById('dropInvalid')?.classList.toggle('hidden', state.drag !== 'invalid');
 
-  const flags = [
-    c.secure   ? '<span class="flag-badge flag-secure">Secure</span>' : '',
-    c.httpOnly ? '<span class="flag-badge flag-http">HttpOnly</span>' : '',
-    !c.expirationDate ? '<span class="flag-badge flag-session">' + t('session') + '</span>' : '',
-  ].join('');
+  const domainEls = [document.getElementById('dropDomainValid')];
+  domainEls.forEach((el) => {
+    if (el && currentDomain) el.textContent = currentDomain;
+  });
 
-  const valuePreview = c.value.length > 40 ? c.value.slice(0, 40) + '…' : c.value;
+  const errName = document.getElementById('dropErrorName');
+  if (errName) errName.textContent = state.dropErrorName || 'file';
+
+  document.getElementById('app')?.classList.toggle('is-dragging', show);
+}
+
+/* ── Sheets ─────────────────────────────── */
+function renderSheet(stats) {
+  const host = document.getElementById('sheetHost');
+  const scrim = document.getElementById('scrim');
+  const m = state.modal;
+
+  if (!m) {
+    host.innerHTML = '';
+    scrim.classList.add('hidden');
+    return;
+  }
+  scrim.classList.remove('hidden');
+
+  if (m === 'export') host.innerHTML = exportSheetHTML();
+  else if (m === 'security') host.innerHTML = securitySheetHTML(stats);
+  else if (m === 'clear') host.innerHTML = clearSheetHTML();
+  else if (m === 'import') host.innerHTML = importSheetHTML();
+  else if (m === 'protected') host.innerHTML = protectedSheetHTML();
+  else if (m === 'saveProfile') host.innerHTML = saveProfileSheetHTML();
+  else if (m === 'edit') host.innerHTML = editSheetHTML();
+  else host.innerHTML = '';
+
+  bindSheetEvents();
+}
+
+function sheetChrome(title, sub, body) {
+  return `
+  <div class="sheet" role="dialog" aria-modal="true" aria-label="${escAttr(title)}">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div style="flex:1;min-width:0">
+        <div class="sheet-title">${escHtml(title)}</div>
+        ${sub ? `<div class="sheet-sub">${sub}</div>` : ''}
+      </div>
+      <button type="button" class="sheet-close" data-close aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+      </button>
+    </div>
+    ${body}
+  </div>`;
+}
+
+function exportSheetHTML() {
+  const list = getExportList();
+  const meta = fileMeta(state.exportFormat);
+  const text = serializeCookies(list, state.exportFormat, currentDomain);
+  const preview = text
+    .split('\n')
+    .slice(0, 3)
+    .map((l) => (l.length > 46 ? l.slice(0, 46) + '…' : l))
+    .join('\n');
+  const fileInfo = `${currentDomain}-cookies.${meta.ext} · ${list.length}`;
+
+  const formats = EXPORT_FORMATS.map(
+    (f) => `
+    <button type="button" class="format-btn${state.exportFormat === f.id ? ' active' : ''}" data-fmt="${f.id}" role="radio" aria-checked="${state.exportFormat === f.id}">
+      <span class="format-top">
+        <span class="format-label">${escHtml(f.label)}</span>
+        <span class="dot${state.exportFormat === f.id ? ' on' : ''}">${
+          state.exportFormat === f.id
+            ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>'
+            : ''
+        }</span>
+      </span>
+      <span class="format-desc">${escHtml(f.desc)}</span>
+    </button>`,
+  ).join('');
+
+  return sheetChrome(
+    t('exportCookies'),
+    `${list.length} · ${meta.ext.toUpperCase()}`,
+    `
+    <div>
+      <div class="field-label">${t('whatToExport')}</div>
+      <div class="seg" role="radiogroup">
+        <button type="button" class="seg-btn${state.exportScope === 'site' ? ' active' : ''}" data-scope="site">${t('thisSite')}</button>
+        <button type="button" class="seg-btn${state.exportScope === 'all' ? ' active' : ''}" data-scope="all">${t('allProfiles')}</button>
+      </div>
+    </div>
+    <div>
+      <div class="field-label">${t('format')}</div>
+      <div class="format-grid">${formats}</div>
+    </div>
+    <div class="toggle-card">
+      <div class="toggle-row">
+        <span class="toggle-label-text">${t('includeHttpOnly')}</span>
+        <button type="button" class="switch" data-opt="http" role="switch" aria-checked="${state.optHttpOnly}">
+          <span class="switch-track${state.optHttpOnly ? ' on' : ''}"><span class="switch-knob"></span></span>
+        </button>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label-text">${t('includeExpired')}</span>
+        <button type="button" class="switch" data-opt="expired" role="switch" aria-checked="${state.optExpired}">
+          <span class="switch-track${state.optExpired ? ' on' : ''}"><span class="switch-knob"></span></span>
+        </button>
+      </div>
+    </div>
+    <div>
+      <div class="preview-head">
+        <span class="field-label">${t('preview')}</span>
+        <span class="preview-meta">${escHtml(fileInfo)}</span>
+      </div>
+      <div class="preview-box">${escHtml(preview || '—')}</div>
+    </div>
+    <div class="export-actions">
+      <button type="button" class="btn-copy-outline copy-btn" id="copyExportBtn">
+        <span class="copy-btn-icon" aria-hidden="true">
+          <svg class="icon-copy" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
+          <svg class="icon-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+        </span>
+        ${t('copy')}
+      </button>
+      <button type="button" class="btn-block" id="doExportBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m7 10 5 5 5-5"></path><path d="M12 15V3"></path></svg>
+        ${t('download')} .${meta.ext}
+      </button>
+    </div>
+  `,
+  );
+}
+
+function securitySheetHTML(stats) {
+  const rows = buildSecurityRows(stats, currentDomain)
+    .map(
+      (r) => `
+    <div class="sec-row">
+      <span class="sec-badge ${r.good ? 'ok' : 'warn'}">${r.good ? '✓' : '!'}</span>
+      <span style="flex:1;min-width:0">
+        <span style="display:block;font-size:14px;font-weight:600">${escHtml(r.title)}</span>
+        <span style="display:block;font-size:12px;color:var(--muted);line-height:1.4">${escHtml(r.detail)}</span>
+      </span>
+    </div>`,
+    )
+    .join('');
+
+  return sheetChrome(
+    t('securityReport'),
+    `${escHtml(currentDomain)} · ${stats.grade}`,
+    `
+    <div class="sec-list">${rows}</div>
+    ${stats.trackN ? `<button type="button" class="btn-danger-solid" id="fixTrackersBtn">${t('fixTrackers')}</button>` : ''}
+    <button type="button" class="btn-block secondary" data-close>${t('done')}</button>
+  `,
+  );
+}
+
+function clearSheetHTML() {
+  const target = state.cookies.find((c) => c.name === state.targetName);
+  const clearAll = state.clearMode === 'all';
+  const delAll = state.cookies.filter((c) => !c.protected);
+  const sessionN = delAll.filter((c) => isSessionCookie(c)).length;
+  const persistentN = delAll.length - sessionN;
+  const keptN = state.cookies.filter((c) => c.protected).length;
+
+  let title;
+  let desc;
+  let button;
+
+  if (clearAll) {
+    title = t('clearCookies');
+    desc = delAll.length
+      ? `This deletes ${plural(delAll.length, t('cookie'), t('cookies'))} for ${currentDomain} and may sign you out of the site. ${t('cantUndo')}`
+      : t('nothingToDelete');
+    button = delAll.length
+      ? `${t('delete')} ${delAll.length}`
+      : t('nothingToDelete');
+  } else {
+    const nm = target?.name || 'cookie';
+    title = `Delete ${nm}?`;
+    desc =
+      target?.protected
+        ? `${nm} is protected. Deleting it removes the protection too.`
+        : `This removes ${nm} from ${currentDomain}. ${t('cantUndo')}`;
+    button = t('delete');
+  }
 
   return `
-  <div class="cookie-item" data-name="${escHtml(c.name)}">
-    <div class="cookie-item-header">
-      <span class="cookie-name">${escHtml(c.name)}</span>
-      <span class="cookie-value-preview">${escHtml(valuePreview || '(empty)')}</span>
-      <div class="cookie-flags">${flags}</div>
-      <svg class="cookie-expand-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="6 9 12 15 18 9"/>
-      </svg>
-    </div>
-
-    <div class="cookie-details">
-      <div class="detail-grid">
-        <span class="detail-key">${t('name')}</span>
-        <span class="detail-val">${escHtml(c.name)}</span>
-        <span class="detail-key">${t('value')}</span>
-        <span class="detail-val" style="display:flex;align-items:flex-start;gap:6px;">
-          <span style="flex:1;word-break:break-all;">${escHtml(c.value || '(empty)')}</span>
-          <button class="copy-btn" data-action="copy-value" data-value="${escAttr(c.value)}" title="${escAttr(t('copyValue'))}">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-            </svg>
-          </button>
-        </span>
-        <span class="detail-key">Domain</span>
-        <span class="detail-val">${escHtml(c.domain)}</span>
-        <span class="detail-key">${t('path')}</span>
-        <span class="detail-val">${escHtml(c.path)}</span>
-        <span class="detail-key">Expires</span>
-        <span class="detail-val">${escHtml(expiry)}</span>
-        <span class="detail-key">SameSite</span>
-        <span class="detail-val">${escHtml(c.sameSite || 'unspecified')}</span>
-      </div>
-      <div class="detail-actions">
-        <button class="btn btn-ghost btn-xs" data-action="edit" data-name="${escAttr(c.name)}">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+  <div class="clear-wrap">
+    <div class="clear-card" role="alertdialog" aria-modal="true" aria-labelledby="vok-clear-title">
+      <div class="clear-hero" aria-hidden="true">
+        <div class="clear-orbit"></div>
+        <div class="clear-ring"></div>
+        <div class="clear-ring r2"></div>
+        <div class="clear-ring r3"></div>
+        <div class="clear-icon">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <g class="lid"><path d="M3 6h18"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></g>
+            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+            <path d="M10 11v6"></path><path d="M14 11v6"></path>
           </svg>
-          ${t('edit')}
+        </div>
+      </div>
+      <div class="clear-copy">
+        <div class="clear-title" id="vok-clear-title">${escHtml(title)}</div>
+        <div class="clear-desc">${escHtml(desc)}</div>
+      </div>
+      ${
+        clearAll
+          ? `
+      <div class="clear-stats">
+        <div class="clear-stat"><div class="clear-stat-value">${sessionN}</div><div class="clear-stat-label">${t('clearSession')}</div></div>
+        <div class="clear-stat"><div class="clear-stat-value">${persistentN}</div><div class="clear-stat-label">${t('clearPersistent')}</div></div>
+        <div class="clear-stat kept"><div class="clear-stat-value">${keptN}</div><div class="clear-stat-label">${t('clearKept')}</div></div>
+      </div>
+      <div class="clear-backup">
+        <span style="flex:1;font-size:13px;font-weight:500">${t('backupBeforeClear')}</span>
+        <button type="button" class="switch" data-opt="backup" role="switch" aria-checked="${state.backup}">
+          <span class="switch-track${state.backup ? ' on' : ''}"><span class="switch-knob"></span></span>
         </button>
-        <button class="btn btn-danger btn-xs" data-action="delete" data-name="${escAttr(c.name)}">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
-            <path d="M9 6V4h6v2"/>
-          </svg>
-          ${t('delete')}
+      </div>`
+          : ''
+      }
+      <div class="clear-actions">
+        <button type="button" class="btn-cancel" data-close>${t('cancel')}</button>
+        <button type="button" class="btn-delete" id="confirmClearBtn">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+          ${escHtml(button)}
         </button>
-      </div>
-    </div>
-
-    <!-- Inline edit form -->
-    <div class="cookie-edit-form">
-      <div class="form-row">
-        <div class="field">
-          <label class="field-label">${t('name')}</label>
-          <input class="form-input" id="edit-name-${escAttr(c.name)}" value="${escAttr(c.name)}" />
-        </div>
-        <div class="field">
-          <label class="field-label">${t('value')}</label>
-          <input class="form-input" id="edit-value-${escAttr(c.name)}" value="${escAttr(c.value)}" />
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="field">
-          <label class="field-label">${t('path')}</label>
-          <input class="form-input" id="edit-path-${escAttr(c.name)}" value="${escAttr(c.path)}" />
-        </div>
-        <div class="field">
-          <label class="field-label">${t('expiresLabel')}</label>
-          <input type="number" class="form-input" id="edit-expiry-${escAttr(c.name)}"
-            value="${c.expirationDate ? Math.max(0, Math.round((c.expirationDate - Date.now()/1000) / 86400)) : ''}" />
-        </div>
-      </div>
-      <div class="form-row flags-row">
-        <label class="toggle-label">
-          <input type="checkbox" id="edit-secure-${escAttr(c.name)}" ${c.secure ? 'checked' : ''} />
-          <span class="toggle-pill"></span> ${t('secure')}
-        </label>
-        <label class="toggle-label">
-          <input type="checkbox" id="edit-httponly-${escAttr(c.name)}" ${c.httpOnly ? 'checked' : ''} />
-          <span class="toggle-pill"></span> ${t('httpOnly')}
-        </label>
-      </div>
-      <div class="form-actions">
-        <button class="btn btn-ghost btn-xs" data-action="cancel-edit" data-name="${escAttr(c.name)}">${t('cancel')}</button>
-        <button class="btn btn-primary btn-xs" data-action="save-edit" data-name="${escAttr(c.name)}">${t('save')}</button>
       </div>
     </div>
   </div>`;
 }
 
-function toggleCookieItem(item) {
-  const isExpanded = item.classList.contains('expanded');
-  // Collapse all others
-  document.querySelectorAll('.cookie-item.expanded').forEach(el => {
-    if (el !== item) el.classList.remove('expanded');
-  });
-  item.classList.toggle('expanded', !isExpanded);
-}
+function importSheetHTML() {
+  const payload = state.importPayload;
+  if (!payload) return '';
 
-function filterCookies(q) {
-  renderCookies(q);
-}
+  const fileName = payload.name || 'import.json';
+  const fileSize = sizeText(payload.size);
+  const favSrc = document.getElementById('siteFavicon')?.src;
+  const hasFav = document.getElementById('siteAvatar')?.classList.contains('has-favicon') && favSrc;
+  const avatar = hasFav
+    ? `<img src="${escAttr(favSrc)}" alt="" />`
+    : escHtml(domainInitial(currentDomain));
 
-// ── Cookie CRUD ───────────────────────────
-async function saveNewCookie() {
-  const name    = document.getElementById('newName').value.trim();
-  const value   = document.getElementById('newValue').value;
-  const path    = document.getElementById('newPath').value.trim() || '/';
-  const expDays = document.getElementById('newExpiry').value;
-  const secure  = document.getElementById('newSecure').checked;
-  const httpOnly= document.getElementById('newHttpOnly').checked;
-  const sameSiteStrict = document.getElementById('newSameSite').checked;
+  const fileCard = `
+    <div class="import-file">
+      <div class="import-file-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><path d="M14 2v6h6"></path><path d="M8 13h8"></path><path d="M8 17h5"></path></svg>
+      </div>
+      <div class="import-file-meta">
+        <div class="import-file-name">${escHtml(fileName)}</div>
+        <div class="import-file-size">${escHtml(fileSize)}</div>
+      </div>
+      <span class="import-valid">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>
+        ${t('importValid')}
+      </span>
+    </div>`;
 
-  if (!name) { showToast(t('cookieNameRequired'), 'error'); return; }
+  const targetCard = `
+    <div class="import-target">
+      <div class="import-target-avatar">${avatar}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:600">${escHtml(currentDomain)}</div>
+        <div style="font-size:12px;color:var(--muted)">${t('importIntoTab')}</div>
+      </div>
+    </div>`;
 
-  const cookieData = {
-    url:      currentUrl,
-    name,
-    value,
-    path,
-    secure,
-    httpOnly,
-    sameSite: sameSiteStrict ? 'strict' : 'lax',
-  };
+  const modeRadios = `
+    <div class="mode-stack" role="radiogroup" aria-label="Import mode">
+      <button type="button" class="mode-btn${state.importMode === 'merge' ? ' active' : ''}" data-mode="merge">
+        <span style="flex:1;min-width:0">
+          <span style="display:block;font-size:14px;font-weight:600">${t('merge')}</span>
+          <span style="display:block;font-size:12px;color:var(--text2)">${t('mergeDesc')}</span>
+        </span>
+        <span class="mode-dot">${state.importMode === 'merge' ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>' : ''}</span>
+      </button>
+      <button type="button" class="mode-btn${state.importMode === 'replace' ? ' active' : ''}" data-mode="replace">
+        <span style="flex:1;min-width:0">
+          <span style="display:block;font-size:14px;font-weight:600">${t('replace')}</span>
+          <span style="display:block;font-size:12px;color:var(--text2)">${t('replaceDesc')}</span>
+        </span>
+        <span class="mode-dot">${state.importMode === 'replace' ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>' : ''}</span>
+      </button>
+    </div>`;
 
-  if (expDays !== '') {
-    cookieData.expirationDate = Math.floor(Date.now() / 1000) + parseInt(expDays, 10) * 86400;
+  const actions = `
+    <div class="sheet-actions import-actions">
+      <button type="button" class="btn-cancel-sheet" data-close>${t('cancel')}</button>
+      <button type="button" class="btn-import" id="confirmImportBtn">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m17 8-5-5-5 5"></path><path d="M12 3v12"></path><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path></svg>
+        ${t('importButton')}
+      </button>
+    </div>`;
+
+  if (payload.kind === 'profiles') {
+    const items = Object.values(payload.profiles || {});
+    return sheetChrome(
+      t('importCookies'),
+      '',
+      `
+      ${fileCard}
+      <div class="import-stats">
+        <div class="import-stat"><div class="import-stat-value">${items.length}</div><div class="import-stat-label">${t('profilesFound')}</div></div>
+      </div>
+      ${actions}
+    `,
+    );
   }
 
+  const all = payload.cookies || [];
+  const toAdd = all.filter((c) => !isExpiredCookie(c));
+  const expiredN = all.length - toAdd.length;
+
+  return sheetChrome(
+    t('importCookies'),
+    '',
+    `
+    ${fileCard}
+    <div class="import-stats">
+      <div class="import-stat"><div class="import-stat-value">${all.length}</div><div class="import-stat-label">${t('cookiesFound')}</div></div>
+      <div class="import-stat"><div class="import-stat-value">${toAdd.length}</div><div class="import-stat-label">${t('willImport')}</div></div>
+      <div class="import-stat warn"><div class="import-stat-value">${expiredN}</div><div class="import-stat-label">${t('expiredSkipped')}</div></div>
+    </div>
+    ${targetCard}
+    ${modeRadios}
+    ${actions}
+  `,
+  );
+}
+
+function protectedSheetHTML() {
+  const rows = state.cookies.filter((c) => c.protected);
+  const body = rows.length
+    ? `<div class="tool-card">${rows
+        .map(
+          (c) => `
+      <div class="tool-row compact">
+        <span class="tool-text"><span class="tool-title" style="font-family:'JetBrains Mono',monospace">${escHtml(c.name)}</span></span>
+        <button type="button" class="btn-xs" data-unprotect="${escAttr(c.name)}">${t('unprotect')}</button>
+      </div>`,
+        )
+        .join('')}</div>`
+    : `<div class="empty-state" style="padding:24px"><p>${t('noneProtected')}</p></div>`;
+
+  return sheetChrome(
+    t('protectedSheetTitle'),
+    t('protectedSheetDesc'),
+    `${body}<button type="button" class="btn-block secondary" data-close>${t('done')}</button>`,
+  );
+}
+
+function saveProfileSheetHTML() {
+  return sheetChrome(
+    t('saveProfile'),
+    escHtml(currentDomain),
+    `
+    <div class="form-field">
+      <label for="profileNameInput">${t('profileName')}</label>
+      <input class="form-input" id="profileNameInput" data-i18n-placeholder="profileNamePlaceholder" placeholder="${escAttr(t('profileNamePlaceholder'))}" autocomplete="off" />
+    </div>
+    <div class="sheet-actions">
+      <button type="button" class="btn-block secondary" data-close>${t('cancel')}</button>
+      <button type="button" class="btn-block" id="confirmSaveProfileBtn">${t('save')}</button>
+    </div>
+  `,
+  );
+}
+
+function editSheetHTML() {
+  const c = state.editCookie;
+  if (!c) return '';
+  const days =
+    c.expirationDate != null
+      ? Math.max(0, Math.round((c.expirationDate - Date.now() / 1000) / 86400))
+      : '';
+  return sheetChrome(
+    t('editCookie'),
+    escHtml(c.name),
+    `
+    <div class="form-field">
+      <label>${t('value')}</label>
+      <textarea class="form-textarea" id="editValue">${escHtml(c.value)}</textarea>
+    </div>
+    <div class="form-field">
+      <label>${t('path')}</label>
+      <input class="form-input" id="editPath" value="${escAttr(c.path || '/')}" />
+    </div>
+    <div class="form-field">
+      <label>${t('expiresLabel')}</label>
+      <input type="number" class="form-input" id="editExpiry" value="${escAttr(days)}" min="0" />
+    </div>
+    <div class="flags-row">
+      <label class="check-label"><input type="checkbox" id="editSecure" ${c.secure ? 'checked' : ''}/> ${t('secure')}</label>
+      <label class="check-label"><input type="checkbox" id="editHttpOnly" ${c.httpOnly ? 'checked' : ''}/> ${t('httpOnly')}</label>
+    </div>
+    <div class="sheet-actions">
+      <button type="button" class="btn-block secondary" data-close>${t('cancel')}</button>
+      <button type="button" class="btn-block" id="confirmEditBtn">${t('save')}</button>
+    </div>
+  `,
+  );
+}
+
+function bindSheetEvents() {
+  const host = document.getElementById('sheetHost');
+  host.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', closeModal));
+
+  host.querySelectorAll('[data-fmt]').forEach((b) => {
+    b.addEventListener('click', () => {
+      state.exportFormat = b.dataset.fmt;
+      render();
+    });
+  });
+  host.querySelectorAll('[data-scope]').forEach((b) => {
+    b.addEventListener('click', () => {
+      state.exportScope = b.dataset.scope;
+      render();
+    });
+  });
+  host.querySelectorAll('[data-opt]').forEach((b) => {
+    b.addEventListener('click', () => {
+      const o = b.dataset.opt;
+      if (o === 'http') state.optHttpOnly = !state.optHttpOnly;
+      if (o === 'expired') state.optExpired = !state.optExpired;
+      if (o === 'backup') state.backup = !state.backup;
+      render();
+    });
+  });
+  host.querySelectorAll('[data-mode]').forEach((b) => {
+    b.addEventListener('click', () => {
+      state.importMode = b.dataset.mode;
+      render();
+    });
+  });
+  host.querySelectorAll('[data-unprotect]').forEach((b) => {
+    b.addEventListener('click', async () => {
+      state.protected.delete(b.dataset.unprotect);
+      await setProtectedNames(currentDomain, state.protected);
+      await refreshCookies();
+      render();
+    });
+  });
+
+  host.querySelector('#doExportBtn')?.addEventListener('click', doExport);
+  host.querySelector('#copyExportBtn')?.addEventListener('click', (e) => {
+    copyExport(e.currentTarget);
+  });
+  host.querySelector('#confirmClearBtn')?.addEventListener('click', confirmClear);
+  host.querySelector('#confirmImportBtn')?.addEventListener('click', confirmImport);
+  host.querySelector('#confirmSaveProfileBtn')?.addEventListener('click', confirmSaveProfile);
+  host.querySelector('#confirmEditBtn')?.addEventListener('click', confirmEdit);
+  host.querySelector('#fixTrackersBtn')?.addEventListener('click', cleanTrackers);
+  host.querySelector('#profileNameInput')?.focus();
+}
+
+/* ── Actions ────────────────────────────── */
+function getExportList() {
+  let list;
+  if (state.exportScope === 'all') {
+    list = [];
+    Object.values(state.profiles).forEach((p) => {
+      (p.cookies || []).forEach((c) => list.push(c));
+    });
+    if (!list.length) list = state.cookies.slice();
+  } else {
+    list = state.cookies.slice();
+  }
+  return filterExportList(list, {
+    includeHttpOnly: state.optHttpOnly,
+    includeExpired: state.optExpired,
+  });
+}
+
+function doExport() {
+  const list = getExportList();
+  if (!list.length) {
+    showToast(t('noCookiesToExport'), 'error');
+    return;
+  }
+  const meta = fileMeta(state.exportFormat);
+  const text = serializeCookies(list, state.exportFormat, currentDomain);
+  downloadText(`${currentDomain}-cookies.${meta.ext}`, text, meta.mime);
+  closeModal();
+  showToast(t('exportedCookies', { count: list.length }), 'success');
+}
+
+async function copyAll() {
+  if (!state.cookies.length) {
+    showToast(t('noCookiesToExport'), 'error');
+    return;
+  }
+  const text = serializeCookies(state.cookies, 'header', currentDomain);
+  const btn = document.getElementById('copyAllBtn');
+  await copyText(text, t('copiedCookies', { count: state.cookies.length }), btn);
+}
+
+async function copyExport(btn) {
+  const list = getExportList();
+  if (!list.length) {
+    showToast(t('noCookiesToExport'), 'error');
+    return;
+  }
+  const text = serializeCookies(list, state.exportFormat, currentDomain);
+  await copyText(text, t('copiedCookies', { count: list.length }), btn);
+}
+
+/* Copy helpers — icon swap + pill toast */
+const copyFlashTimers = new WeakMap();
+
+function flashCopyButton(btn) {
+  if (!btn) return;
+  btn.classList.add('copied');
+  const prev = copyFlashTimers.get(btn);
+  if (prev) clearTimeout(prev);
+  const id = setTimeout(() => btn.classList.remove('copied'), 1400);
+  copyFlashTimers.set(btn, id);
+}
+
+async function copyText(text, okMsg, btn) {
   try {
-    await chrome.cookies.set(cookieData);
-    hideForm('addCookieForm');
-    clearNewCookieForm();
-    await loadCookies();
-    showToast(t('cookieSaved', { name }), 'success');
-  } catch (err) {
-    showToast(t('saveFailed', { s: err.message }), 'error');
+    await navigator.clipboard.writeText(text);
+    flashCopyButton(btn);
+    showToast(okMsg || t('toastCopied'), 'success');
+  } catch {
+    showToast(t('copyFailed'), 'error');
   }
 }
 
-function clearNewCookieForm() {
-  ['newName','newValue','newPath','newExpiry'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
-  ['newSecure','newHttpOnly','newSameSite'].forEach(id => {
-    document.getElementById(id).checked = false;
-  });
+async function cleanExpired() {
+  const targets = state.cookies.filter((c) => isExpiredCookie(c) && !c.protected);
+  if (!targets.length) {
+    showToast(t('nothingToDelete'), 'success');
+    return;
+  }
+  const n = await removeCookies(currentUrl, targets);
+  await refreshCookies();
+  closeModal();
+  render();
+  showToast(t('deletedExpired', { count: n }), 'success');
 }
 
-async function deleteCookie(name) {
+async function cleanTrackers() {
+  const targets = state.cookies.filter((c) => c.tracking && !c.protected);
+  if (!targets.length) {
+    showToast(t('nothingToDelete'), 'success');
+    return;
+  }
+  const n = await removeCookies(currentUrl, targets);
+  await refreshCookies();
+  closeModal();
+  render();
+  showToast(t('deletedTrackers', { count: n }), 'success');
+}
+
+async function confirmClear() {
+  if (state.clearMode === 'all') {
+    const delAll = state.cookies.filter((c) => !c.protected);
+    if (!delAll.length) {
+      closeModal();
+      showToast(t('nothingToDelete'), 'success');
+      return;
+    }
+    if (state.backup) {
+      const text = serializeCookies(delAll, 'json', currentDomain);
+      downloadText(`${currentDomain}-backup.json`, text, 'application/json');
+    }
+    const n = await removeCookies(currentUrl, delAll);
+    await refreshCookies();
+    closeModal();
+    render();
+    showToast(t('deletedCookies', { count: n }), 'success');
+    return;
+  }
+
+  const name = state.targetName;
   try {
-    await chrome.cookies.remove({ url: currentUrl, name });
-    await loadCookies();
+    await removeCookieOnUrl(currentUrl, name);
+    if (state.protected.has(name)) {
+      state.protected.delete(name);
+      await setProtectedNames(currentDomain, state.protected);
+    }
+    await refreshCookies();
+    closeModal();
+    render();
     showToast(t('cookieDeleted', { name }), 'success');
   } catch (err) {
-    showToast(t('deleteFailed', { s: err.message }), 'error');
+    showToast(err.message, 'error');
   }
 }
 
-function startEditCookie(name) {
-  const item = document.querySelector(`.cookie-item[data-name="${CSS.escape(name)}"]`);
-  if (!item) return;
-  item.classList.add('expanded', 'editing');
-}
+async function confirmImport() {
+  const payload = state.importPayload;
+  if (!payload) return;
 
-function cancelEditCookie(name) {
-  const item = document.querySelector(`.cookie-item[data-name="${CSS.escape(name)}"]`);
-  if (!item) return;
-  item.classList.remove('editing');
-}
-
-async function saveEditCookie(originalName) {
-  const escape = CSS.escape(originalName);
-  const name     = document.getElementById(`edit-name-${escape}`)?.value.trim();
-  const value    = document.getElementById(`edit-value-${escape}`)?.value ?? '';
-  const path     = document.getElementById(`edit-path-${escape}`)?.value.trim() || '/';
-  const expDays  = document.getElementById(`edit-expiry-${escape}`)?.value;
-  const secure   = document.getElementById(`edit-secure-${escape}`)?.checked;
-  const httpOnly = document.getElementById(`edit-httponly-${escape}`)?.checked;
-
-  if (!name) { showToast(t('nameCannotBeEmpty'), 'error'); return; }
-
-  try {
-    // Remove old if name changed
-    if (name !== originalName) {
-      await chrome.cookies.remove({ url: currentUrl, name: originalName });
+  if (payload.kind === 'profiles') {
+    const incoming = payload.profiles || {};
+    const merged = { ...state.profiles };
+    const existingNames = new Set(
+      Object.values(merged).map((p) => (p.name || '').toLowerCase()),
+    );
+    let count = 0;
+    for (const [id, p] of Object.entries(incoming)) {
+      const nameLower = (p.name || '').toLowerCase();
+      if (existingNames.has(nameLower)) continue;
+      existingNames.add(nameLower);
+      const newId = merged[id] ? 'p_' + Date.now() + '_' + count : id;
+      merged[newId] = { ...p, id: newId };
+      count++;
     }
-
-    const cookieData = { url: currentUrl, name, value, path, secure, httpOnly };
-    if (expDays !== '') {
-      cookieData.expirationDate = Math.floor(Date.now() / 1000) + parseInt(expDays, 10) * 86400;
-    }
-
-    await chrome.cookies.set(cookieData);
-    await loadCookies();
-    showToast(t('cookieUpdated'), 'success');
-  } catch (err) {
-    showToast(t('updateFailed', { s: err.message }), 'error');
+    state.profiles = merged;
+    await setProfiles(merged);
+    closeModal();
+    state.tab = 'profiles';
+    render();
+    showToast(t('profilesImported', { count }), 'success');
+    return;
   }
+
+  const incoming = (payload.cookies || []).filter((c) => !isExpiredCookie(c));
+  if (state.importMode === 'replace') {
+    const unprotected = state.cookies.filter((c) => !c.protected);
+    await removeCookies(currentUrl, unprotected);
+  }
+
+  const skip = new Set(
+    state.importMode === 'merge'
+      ? [...state.protected]
+      : [],
+  );
+  // When merging, overwrite matching names except protected
+  if (state.importMode === 'merge') {
+    for (const c of incoming) {
+      if (state.protected.has(c.name)) continue;
+      const existing = state.cookies.find((x) => x.name === c.name);
+      if (existing) {
+        try {
+          await removeCookieOnUrl(currentUrl, c.name);
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+  }
+
+  const { applied, failed } = await applyCookies(currentUrl, incoming, { skipNames: skip });
+  await refreshCookies();
+  closeModal();
+  state.tab = 'cookies';
+  render();
+  showToast(
+    failed > 0 ? t('appliedFailed', { applied, failed }) : t('cookiesImported', { count: applied }),
+    failed > 0 ? 'error' : 'success',
+  );
+  if (currentTab?.id) chrome.tabs.reload(currentTab.id);
 }
 
-// ── Profiles ──────────────────────────────
-async function saveProfile() {
-  const name = document.getElementById('profileNameInput').value.trim();
-  if (!name) { showToast(t('profileNameRequired'), 'error'); return; }
-
+async function confirmSaveProfile() {
+  const name = document.getElementById('profileNameInput')?.value.trim();
+  if (!name) {
+    showToast(t('profileNameRequired'), 'error');
+    return;
+  }
   const nameLower = name.toLowerCase();
-  const isDuplicate = Object.values(profiles).some(p => p.name && p.name.toLowerCase() === nameLower);
-  if (isDuplicate) { showToast(t('profileNameDuplicate'), 'error'); return; }
-
+  if (Object.values(state.profiles).some((p) => (p.name || '').toLowerCase() === nameLower)) {
+    showToast(t('profileNameDuplicate'), 'error');
+    return;
+  }
   const id = 'p_' + Date.now();
-  profiles[id] = {
+  state.profiles[id] = {
     id,
     name,
     domain: currentDomain,
     savedAt: new Date().toISOString(),
-    cookies: JSON.parse(JSON.stringify(cookies)),
+    cookies: JSON.parse(JSON.stringify(state.cookies)),
   };
-
-  await chrome.storage.local.set({ profiles });
-  hideForm('saveProfileForm');
-  document.getElementById('profileNameInput').value = '';
-  renderProfiles();
-  updateBadge('profileCount', Object.keys(profiles).length);
+  await setProfiles(state.profiles);
+  state.activeProfileId = id;
+  await setActiveProfileId(id);
+  closeModal();
+  state.tab = 'profiles';
+  render();
   showToast(t('profileSaved', { name }), 'success');
 }
 
-function renderProfiles() {
-  const list  = document.getElementById('profileList');
-  const empty = document.getElementById('profilesEmpty');
-  const keys  = Object.keys(profiles);
+async function confirmEdit() {
+  const c = state.editCookie;
+  if (!c) return;
+  const value = document.getElementById('editValue')?.value ?? '';
+  const path = document.getElementById('editPath')?.value.trim() || '/';
+  const expDays = document.getElementById('editExpiry')?.value;
+  const secure = document.getElementById('editSecure')?.checked;
+  const httpOnly = document.getElementById('editHttpOnly')?.checked;
 
-  if (keys.length === 0) {
-    list.innerHTML = '';
-    empty.classList.remove('hidden');
-    return;
+  const cookieData = {
+    name: c.name,
+    value,
+    path,
+    secure,
+    httpOnly,
+    sameSite: c.sameSite,
+  };
+  if (expDays !== '') {
+    cookieData.expirationDate =
+      Math.floor(Date.now() / 1000) + parseInt(expDays, 10) * 86400;
   }
-  empty.classList.add('hidden');
 
-  list.innerHTML = keys.map(id => profileCardHTML(profiles[id])).join('');
-
-  list.querySelectorAll('[data-action="load-profile"]').forEach(btn => {
-    btn.addEventListener('click', () => loadProfile(btn.dataset.id));
-  });
-  list.querySelectorAll('[data-action="delete-profile"]').forEach(btn => {
-    btn.addEventListener('click', () => deleteProfile(btn.dataset.id));
-  });
+  try {
+    await setCookieOnUrl(currentUrl, cookieData);
+    await refreshCookies();
+    closeModal();
+    render();
+    showToast(t('cookieUpdated'), 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
 }
 
-function profileCardHTML(p) {
-  const date   = new Date(p.savedAt).toLocaleDateString();
-  const count  = p.cookies.length;
-  const initials = p.name.slice(0, 2).toUpperCase();
-
-  return `
-  <div class="profile-card">
-    <div class="profile-avatar">${escHtml(initials)}</div>
-    <div class="profile-info">
-      <div class="profile-name">${escHtml(p.name)}</div>
-      <div class="profile-meta">
-        <span>${escHtml(p.domain)}</span>
-        <span>·</span>
-        <a href="${escAttr((p.domain || '').startsWith('http') ? p.domain : 'https://' + p.domain)}" target="_blank" rel="noopener noreferrer" class="profile-open-link" title="${escAttr(t('openInNewTab'))}">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-          </svg>
-        </a>
-      </div>
-    </div>
-    <div class="profile-actions">
-      <button class="btn btn-primary btn-xs" data-action="load-profile" data-id="${escAttr(p.id)}" title="${escAttr(t('loadIntoCurrentTab'))}">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="5 12 3 12 12 3 21 12 19 12"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>
-        </svg>
-        ${t('load')}
-      </button>
-      <button class="btn btn-danger btn-xs" data-action="delete-profile" data-id="${escAttr(p.id)}" title="${escAttr(t('deleteProfileTitle'))}">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
-          <path d="M9 6V4h6v2"/>
-        </svg>
-      </button>
-    </div>
-  </div>`;
-}
-
-async function loadProfile(id) {
-  const profile = profiles[id];
+async function switchProfile(id) {
+  const profile = state.profiles[id];
   if (!profile) return;
 
-  let applied = 0, failed = 0;
-
-  for (const c of profile.cookies) {
-    try {
-      const cookieData = {
-        url:      currentUrl,
-        name:     c.name,
-        value:    c.value,
-        path:     c.path || '/',
-        secure:   c.secure || false,
-        httpOnly: c.httpOnly || false,
-      };
-      if (c.sameSite && c.sameSite !== 'unspecified') {
-        cookieData.sameSite = c.sameSite;
-      }
-      if (c.expirationDate && c.expirationDate > Date.now() / 1000) {
-        cookieData.expirationDate = c.expirationDate;
-      }
-      await chrome.cookies.set(cookieData);
-      applied++;
-    } catch {
-      failed++;
-    }
-  }
-
-  await loadCookies();
-  switchTab('cookies');
-  const msg = failed > 0
-    ? t('profileAppliedSomeFailed', { applied, failed })
-    : t('profileApplied', { name: profile.name, d: applied });
-  showToast(msg, failed > 0 ? 'error' : 'success');
+  // Clear current unprotected cookies, then apply profile
+  const unprotected = state.cookies.filter((c) => !c.protected);
+  await removeCookies(currentUrl, unprotected);
+  await applyCookies(currentUrl, profile.cookies || [], {
+    skipNames: state.protected,
+  });
+  state.activeProfileId = id;
+  await setActiveProfileId(id);
+  await refreshCookies();
+  state.tab = 'cookies';
+  render();
+  showToast(t('profileApplied', { name: profile.name }), 'success');
+  if (currentTab?.id) chrome.tabs.reload(currentTab.id);
 }
 
 async function deleteProfile(id) {
-  const name = profiles[id]?.name;
-  delete profiles[id];
-  await chrome.storage.local.set({ profiles });
-  renderProfiles();
-  updateBadge('profileCount', Object.keys(profiles).length);
+  const name = state.profiles[id]?.name;
+  delete state.profiles[id];
+  if (state.activeProfileId === id) {
+    state.activeProfileId = null;
+    await setActiveProfileId(null);
+  }
+  await setProfiles(state.profiles);
+  render();
   showToast(t('profileDeleted', { name }), 'success');
 }
 
-// ── Export ────────────────────────────────
-function exportCurrentCookies() {
-  if (cookies.length === 0) {
-    showToast(t('noCookiesToExport'), 'error');
-    return;
-  }
-
-  const blob = new Blob([JSON.stringify(cookies, null, 2)], { type: 'application/json' });
-  const ts   = new Date().toISOString().slice(0, 10);
-  downloadBlob(blob, `cookies_${currentDomain}_${ts}.json`);
-  showToast(t('exportedCookies', { count: cookies.length }), 'success');
-}
-
-function exportProfiles() {
-  const keys = Object.keys(profiles);
-  if (keys.length === 0) {
-    showToast(t('noProfilesToExport'), 'error');
-    return;
-  }
-
-  const blob = new Blob([JSON.stringify({ __type: 'vok-profiles', profiles }, null, 2)], { type: 'application/json' });
-  const ts   = new Date().toISOString().slice(0, 10);
-  downloadBlob(blob, `profiles_${ts}.json`);
-  showToast(t('exportedProfiles', { count: keys.length }), 'success');
-}
-
-function downloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const a   = document.createElement('a');
-  a.href     = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-// ── Import ────────────────────────────────
-function handleImportFile(e, type) {
-  const file = e.target.files[0];
-  e.target.value = '';
-  if (!file) return;
-  processImportFile(file, type);
-}
-
-function processImportFile(file, type) {
-  const reader = new FileReader();
-  reader.onload = ev => {
-    try {
-      const data = JSON.parse(ev.target.result);
-      if (type === 'cookies') {
-        if (!Array.isArray(data)) throw new Error('Expected an array of cookies');
-        importPayload = { type: 'cookies', data };
-        showImportPreview(data.map(c => ({ name: c.name, value: c.value })));
-      } else {
-        // profiles file
-        const raw = data.__type === 'vok-profiles' ? data.profiles : data;
-        if (typeof raw !== 'object' || Array.isArray(raw)) throw new Error('Invalid profiles file');
-        importPayload = { type: 'profiles', data: raw };
-        const items = Object.values(raw).map(p => ({ name: p.name, value: `${p.cookies.length} cookies · ${p.domain}` }));
-        showImportPreview(items);
-      }
-    } catch (err) {
-      showToast(t('invalidFile', { s: err.message }), 'error');
-    }
-  };
-  reader.readAsText(file);
-}
-
-function showImportPreview(items) {
-  const preview = document.getElementById('importPreview');
-  const list    = document.getElementById('previewList');
-
-  list.innerHTML = items.slice(0, 50).map(item => `
-    <div class="preview-item">
-      <span class="preview-item-name">${escHtml(item.name)}</span>
-      <span class="preview-item-val">${escHtml(item.value)}</span>
-    </div>
-  `).join('');
-
-  if (items.length > 50) {
-    list.innerHTML += `<div class="preview-item" style="color:var(--text-muted);font-size:10px;">${t('andMore', { d: items.length - 50 })}</div>`;
-  }
-
-  preview.classList.remove('hidden');
-  document.getElementById('confirmImportBtn').textContent =
-    importPayload?.type === 'profiles' ? t('importProfiles') : t('applyCookies');
-}
-
-function cancelImport() {
-  importPayload = null;
-  document.getElementById('importPreview').classList.add('hidden');
-}
-
-async function applyImport() {
-  if (!importPayload) return;
-
-  if (importPayload.type === 'cookies') {
-    let applied = 0, failed = 0;
-    for (const c of importPayload.data) {
-      try {
-        const cookieData = {
-          url:      currentUrl,
-          name:     c.name,
-          value:    c.value,
-          path:     c.path || '/',
-          secure:   c.secure || false,
-          httpOnly: c.httpOnly || false,
-        };
-        if (c.sameSite && c.sameSite !== 'unspecified') cookieData.sameSite = c.sameSite;
-        if (c.expirationDate && c.expirationDate > Date.now() / 1000) cookieData.expirationDate = c.expirationDate;
-        await chrome.cookies.set(cookieData);
-        applied++;
-      } catch { failed++; }
-    }
-    cancelImport();
-    await loadCookies();
-    switchTab('cookies');
-    showToast(failed > 0 ? t('appliedFailed', { applied, failed }) : t('cookiesImported', { count: applied }), failed > 0 ? 'error' : 'success');
-    if (currentTab?.id) chrome.tabs.reload(currentTab.id);
-
-  } else if (importPayload.type === 'profiles') {
-    const incoming = importPayload.data;
-    const merged   = { ...profiles };
-    const existingNames = new Set(Object.values(merged).map(p => (p.name || '').toLowerCase()));
-    let count = 0;
-    for (const [id, p] of Object.entries(incoming)) {
-      const nameLower = (p.name || '').toLowerCase();
-      if (existingNames.has(nameLower)) continue; // skip duplicate name
-      existingNames.add(nameLower);
-      const newId = profiles[id] ? 'p_' + Date.now() + '_' + count : id;
-      merged[newId] = { ...p, id: newId };
-      count++;
-    }
-    profiles = merged;
-    await chrome.storage.local.set({ profiles });
-    cancelImport();
-    renderProfiles();
-    updateBadge('profileCount', Object.keys(profiles).length);
-    switchTab('profiles');
-    showToast(t('profilesImported', { count }), 'success');
-  }
-}
-
-// ── UI helpers ────────────────────────────
-function toggleForm(id) {
-  const el = document.getElementById(id);
-  el.classList.toggle('hidden');
-  if (!el.classList.contains('hidden')) {
-    const first = el.querySelector('input[type="text"]');
-    if (first) first.focus();
-  }
-}
-
-function hideForm(id) {
-  document.getElementById(id).classList.add('hidden');
-}
-
-function updateBadge(id, count) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = count;
-}
-
-function copyToClipboard(text) {
-  navigator.clipboard.writeText(text).then(
-    ()  => showToast(t('toastCopied'), 'success'),
-    ()  => showToast(t('copyFailed'), 'error'),
-  );
-}
-
-// ── Toast ──────────────────────────────────
-let toastTimer = null;
+/* ── Toast ──────────────────────────────── */
 function showToast(message, type = 'success') {
+  const wrap = document.getElementById('toastWrap');
   const toast = document.getElementById('toast');
-  const icon  = document.getElementById('toastIcon');
-  const msg   = document.getElementById('toastMessage');
+  const icon = document.getElementById('toastIcon');
+  const msg = document.getElementById('toastMessage');
+  if (!wrap || !toast || !msg) return;
 
-  icon.textContent = type === 'success' ? '✓' : '✕';
-  msg.textContent  = message;
-  toast.className  = `toast ${type} show`;
+  if (type === 'success') {
+    icon.innerHTML =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>';
+  } else {
+    icon.innerHTML =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>';
+  }
+  msg.textContent = message;
+  toast.className = `toast ${type}`;
+  wrap.classList.remove('show');
+  // restart enter animation
+  void wrap.offsetWidth;
+  wrap.classList.add('show');
 
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => {
-    toast.classList.remove('show');
-  }, 2600);
-}
-
-// ── Escape helpers ────────────────────────
-function escHtml(str) {
-  return String(str ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-function escAttr(str) {
-  return String(str ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+  toastTimer = setTimeout(() => wrap.classList.remove('show'), 2400);
 }

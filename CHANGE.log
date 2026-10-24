@@ -2,6 +2,53 @@
 
 All notable changes to VOK Cookies are documented in this file.
 
+## [2.0.0] — 2026-10-24
+
+### Brand & architecture
+
+- Rebuilt the popup UI from the v2 design prototype (392×640, light/dark tokens, bottom tab bar)
+- New modular layout: `src/` shared modules + slim `popup/` shell + `background/` worker
+- Version bump to **2.0.0**; badge accent aligned to prototype purple `#6B5CF0`
+
+### Navigation
+
+- Replaced top **Transfer** tab with bottom nav: **Cookies · Profiles · Tools**
+- Tools hub for export/import, cleanup, and protected cookies
+
+### Cookies tab
+
+- Site card with live cookie count, security grade (Good / Fair / Poor), and score bar
+- Quick stats: HTTPS, Secure, HttpOnly, Trackers
+- Filters: All / Session / Secure / Tracking
+- Expandable cookie rows with protect / copy / edit / delete
+- Action bar: Export sheet, quick import, copy-all as header string
+
+### Profiles
+
+- One-tap **Switch** replaces site cookies (protected cookies are kept)
+- Save current tab as a named profile from a bottom sheet
+- Active profile badge and relative “updated” labels
+
+### Tools & transfer
+
+- Multi-format export: **JSON**, **Netscape**, **Header string**, **CSV**
+- Scope: this site or all profiles; toggles for HttpOnly / expired
+- Import review sheet with **Merge** or **Replace** modes
+- Drag-and-drop onto the whole popup (`.json` / `.txt` / cookies.txt)
+- Cleanup: delete expired, delete known trackers, clear site (optional backup)
+- Protected cookies: safe from bulk delete and Clear
+
+### Security
+
+- Security report sheet (HTTPS, Secure, HttpOnly, trackers, expired)
+- Known-tracker detection (`_ga`, `_gid`, `_fbp`, `_octo`, …)
+
+### i18n
+
+- Kept English / Khmer language switcher in the header
+
+---
+
 ## [1.0.1] — 2026-03-17
 
 ### Added
@@ -60,4 +107,5 @@ All notable changes to VOK Cookies are documented in this file.
 
 ---
 
+[2.0.0]: https://github.com/k10978311-ai/VOK/releases/tag/v2.0.0
 [1.0.0]: https://github.com/k10978311-ai/VOK/releases/tag/v1.0.0

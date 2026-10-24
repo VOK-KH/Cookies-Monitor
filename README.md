@@ -7,82 +7,83 @@
 <p align="center">
   <a href="https://github.com/k10978311-ai/VOK"><img src="https://img.shields.io/github/stars/k10978311-ai/VOK?style=social" alt="GitHub Stars"></a>
   <a href="https://github.com/k10978311-ai/VOK/releases/latest"><img src="https://img.shields.io/github/release/k10978311-ai/VOK.svg" alt="Latest release"></a>
+  <a style="text-decoration:none"><img src="https://img.shields.io/badge/version-2.0.0-6B5CF0" alt="v2.0.0"/></a>
   <a style="text-decoration:none"><img src="https://img.shields.io/badge/Chrome-Extension-4285F4?logo=googlechrome&logoColor=white" alt="Chrome"/></a>
   <a style="text-decoration:none"><img src="https://img.shields.io/badge/Manifest-V3-00B16A" alt="Manifest V3"/></a>
-  <a style="text-decoration:none"><img src="https://img.shields.io/badge/Edge-Compatible-0078D4?logo=microsoftedge" alt="Edge"/></a>
 </p>
 
 <p align="center">
-  <strong>A browser extension to manage, export, import, and save cookies as reusable account profiles.</strong>
+  <strong>Manage, profile, export, and protect cookies — with security insights and multi-format transfer.</strong>
 </p>
 
 ---
 
-## Features
+## Features (v2)
 
-| Feature | Description |
+| Area | What you get |
 |---|---|
-| **Cookie Manager** | View, add, edit, and delete all cookies for the current tab |
-| **Profiles** | Save cookie sets as named profiles and restore them with one click |
-| **Export** | Download current cookies or all profiles as JSON files |
-| **Import** | Load cookies or profiles from a JSON file |
-| **Badge counter** | The extension icon shows the live cookie count for the active tab |
+| **Cookies** | Search, filters (All / Session / Secure / Tracking), expand, edit, protect, delete |
+| **Security** | Live grade + report (HTTPS, Secure, HttpOnly, trackers, expired) |
+| **Profiles** | Save the current tab; one-tap switch (protected cookies stay) |
+| **Tools** | Export JSON / Netscape / Header / CSV · import with merge/replace · cleanup · protected list |
+| **i18n** | English + Khmer |
+| **Badge** | Live cookie count on the toolbar icon |
+
+---
+
+## Project layout
+
+```
+manifest.json
+background/background.js     # badge service worker
+popup/                       # UI shell (HTML / CSS / app)
+src/                         # shared modules
+  cookies-api.js
+  formats.js                 # serialize / parse (JSON, Netscape, header, CSV)
+  i18n.js
+  security.js
+  storage.js
+  trackers.js
+  utils.js
+icons/
+resources/
+```
 
 ---
 
 ## Load in Chrome / Edge
 
 1. Open **chrome://extensions** (or **edge://extensions**)
-2. Enable **Developer mode** (top-right toggle)
+2. Enable **Developer mode**
 3. Click **Load unpacked**
-4. Select the `VOK-Cookies` folder
-5. The extension appears in your toolbar
+4. Select this project folder
+5. Pin **VOK Cookies** in the toolbar
 
 ---
 
-## Permissions Used
+## Permissions
 
 | Permission | Reason |
 |---|---|
 | `cookies` | Read / write cookies |
-| `activeTab` | Get the current tab URL |
-| `tabs` | Query open tabs |
-| `storage` | Persist profiles in `chrome.storage.local` |
-| `<all_urls>` | Work on any website |
+| `activeTab` | Current tab URL |
+| `tabs` | Query / reload tabs |
+| `storage` | Profiles, protected names, language |
+| `<all_urls>` | Work on any site |
 
 ---
 
-## Export Format
+## Export formats
 
-**Cookies JSON** — array of Chrome cookie objects:
-```json
-[
-  {
-    "name": "session_id",
-    "value": "abc123",
-    "domain": "example.com",
-    "path": "/",
-    "secure": true,
-    "httpOnly": true,
-    "expirationDate": 1800000000
-  }
-]
-```
+- **JSON** — re-import in VOK Cookies  
+- **Netscape** — `cookies.txt` for curl / wget  
+- **Header string** — `name=value; …` for requests  
+- **CSV** — open in a spreadsheet  
 
-**Profiles JSON** — object with a `__type` marker:
-```json
-{
-  "__type": "vok-profiles",
-  "profiles": {
-    "p_1700000000000": {
-      "id": "p_1700000000000",
-      "name": "Work Account",
-      "domain": "example.com",
-      "savedAt": "2024-01-01T00:00:00.000Z",
-      "cookies": [ ... ]
-    }
-  }
-}
-```
+Profiles JSON still uses `{ "__type": "vok-profiles", "profiles": { … } }`.
 
 ---
+
+## Changelog
+
+See [CHANGE.log](./CHANGE.log) for v2.0.0 details.

@@ -9,31 +9,29 @@
 </head>
 
 <body>
-  <div class="app">
+  <div class="app" id="app">
 
-    <!-- ── Header ── -->
     <header class="header">
-      <div class="header-left">
-        <div class="logo">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" fill="#f59e42" />
-            <circle cx="8" cy="9" r="1.5" fill="#7c4a03" />
-            <circle cx="14" cy="8" r="1.2" fill="#7c4a03" />
-            <circle cx="16" cy="14" r="1.4" fill="#7c4a03" />
-            <circle cx="9" cy="15" r="1.3" fill="#7c4a03" />
-            <circle cx="12" cy="12" r="1.1" fill="#7c4a03" />
-          </svg>
-        </div>
-        <div class="header-info">
-          <h1 class="app-title">VOK Cookies</h1>
-          <span class="domain-badge" id="currentDomain" data-i18n="loading">Loading…</span>
-        </div>
+      <div class="logo" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"></path>
+          <path d="M8.5 8.5v.01"></path>
+          <path d="M16 15.5v.01"></path>
+          <path d="M12 12v.01"></path>
+          <path d="M11 17v.01"></path>
+          <path d="M7 14v.01"></path>
+        </svg>
       </div>
-      <div class="lang-switcher">
-        <button type="button" class="lang-btn active" data-lang="en" aria-label="English">EN</button>
-        <button type="button" class="lang-btn" data-lang="km" aria-label="Khmer">KM</button>
+      <div class="header-info">
+        <div class="app-title">VOK Cookies</div>
+        <div class="app-version" data-i18n="version">v2.0.0</div>
       </div>
-      <button class="icon-btn" id="refreshBtn" data-i18n-title="refreshCookies" title="Refresh cookies">
+      <div class="lang-switcher" role="group" aria-label="Language">
+        <button type="button" class="lang-btn active" data-lang="en">EN</button>
+        <button type="button" class="lang-btn" data-lang="km">KM</button>
+      </div>
+      <button type="button" class="icon-btn" id="refreshBtn" data-i18n-aria="refreshCookies" aria-label="Refresh cookies">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
           stroke-linecap="round" stroke-linejoin="round">
           <polyline points="23 4 23 10 17 10" />
@@ -42,252 +40,361 @@
       </button>
     </header>
 
-    <!-- ── Navigation ── -->
-    <nav class="nav">
-      <button class="nav-tab active" data-tab="transfer">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="17 1 21 5 17 9" />
-          <path d="M3 11V9a4 4 0 0 1 4-4h14" />
-          <polyline points="7 23 3 19 7 15" />
-          <path d="M21 13v2a4 4 0 0 1-4 4H3" />
-        </svg>
-        <span data-i18n="navTransfer">Transfer</span>
-      </button>
+    <div class="body">
 
-      <button class="nav-tab" data-tab="profiles">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-          <circle cx="12" cy="7" r="4" />
-        </svg>
-        <span data-i18n="navProfiles">Profiles</span>
-        <span class="nav-badge" id="profileCount">0</span>
-      </button>
-      <button class="nav-tab" data-tab="cookies">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10" />
-          <circle cx="8" cy="9" r="1.5" fill="currentColor" stroke="none" />
-          <circle cx="15" cy="9" r="1.5" fill="currentColor" stroke="none" />
-          <circle cx="10" cy="15" r="1.5" fill="currentColor" stroke="none" />
-        </svg>
-        <span data-i18n="navCookies">Cookies</span>
-        <span class="nav-badge" id="cookieCount">0</span>
-      </button>
-    </nav>
+      <!-- Cookies -->
+      <section class="tab-panel active" id="tab-cookies">
+        <div class="cookies-scroll vokscroll" id="cookiesScroll">
+          <div class="site-card">
+            <div class="site-row">
+              <button type="button" class="site-avatar" id="siteAvatar" title="">
+                <img class="site-favicon hidden" id="siteFavicon" alt="" width="20" height="20" />
+                <span class="site-avatar-letter" id="siteAvatarLetter">?</span>
+              </button>
+              <div class="site-meta">
+                <div class="site-domain" id="currentDomain">…</div>
+                <div class="site-count" id="siteCount">0 cookies</div>
+              </div>
+              <button type="button" class="score-pill ok" id="scorePill">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path
+                    d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z">
+                  </path>
+                  <path d="m9 12 2 2 4-4"></path>
+                </svg>
+                <span id="scoreLabel">Good</span>
+              </button>
+            </div>
+            <div class="score-bar ok" id="scoreBar"><span id="scoreFill" style="width:100%"></span></div>
+            <div class="stat-row">
+              <div class="stat" id="statConnTile">
+                <div class="stat-value" id="statConn">HTTPS</div>
+                <div class="stat-label" data-i18n="connection">Connection</div>
+              </div>
+              <div class="stat">
+                <div class="stat-value" id="statSecure">0</div>
+                <div class="stat-label" data-i18n="secureStat">Secure</div>
+              </div>
+              <div class="stat">
+                <div class="stat-value" id="statHttp">0</div>
+                <div class="stat-label" data-i18n="httpOnlyStat">HttpOnly</div>
+              </div>
+              <div class="stat">
+                <div class="stat-value" id="statTrack">0</div>
+                <div class="stat-label" data-i18n="trackersStat">Trackers</div>
+              </div>
+            </div>
+          </div>
 
-    <!-- ── Content ── -->
-    <main class="content">
-
-      <!-- ── Cookies Tab ── -->
-      <div class="tab-panel" id="tab-cookies">
-        <div class="panel-toolbar">
           <div class="search-wrap">
             <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <circle cx="11" cy="11" r="8" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
-            <input type="text" class="search-input" id="cookieSearch" data-i18n-placeholder="searchPlaceholder" placeholder="Search cookies…"
-              autocomplete="off" />
+            <input type="search" class="search-input" id="cookieSearch" data-i18n-placeholder="searchPlaceholder"
+              placeholder="Search cookies…" autocomplete="off" />
           </div>
-          <button class="btn btn-primary btn-sm" id="addCookieBtn">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-              stroke-linecap="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
+
+          <div class="cookies-sticky">
+            <div class="filters" id="filters" role="tablist"></div>
+          </div>
+
+          <div class="cookie-list" id="cookieList"></div>
+          <div class="empty-state hidden" id="cookiesEmpty">
+            <p data-i18n="noCookiesFound">No cookies found</p>
+            <span data-i18n="noCookiesDesc">This page has no cookies or they are filtered out</span>
+          </div>
+        </div>
+
+        <div class="action-bar">
+          <button type="button" class="btn-primary" id="openExportBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <path d="m7 10 5 5 5-5"></path>
+              <path d="M12 15V3"></path>
             </svg>
-            <span data-i18n="add">Add</span>
+            <span data-i18n="export">Export</span>
+          </button>
+          <label class="btn-square" data-i18n-aria="import" aria-label="Import">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <path d="m17 8-5-5-5 5"></path>
+              <path d="M12 3v12"></path>
+            </svg>
+            <input type="file" id="importFileQuick" accept=".json,.txt,application/json,text/plain" />
+          </label>
+          <button type="button" class="btn-square copy-btn" id="copyAllBtn" data-i18n-aria="copyAll" aria-label="Copy all">
+            <span class="copy-btn-icon" aria-hidden="true">
+              <svg class="icon-copy" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="14" height="14" x="8" y="8" rx="2"></rect>
+                <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+              </svg>
+              <svg class="icon-check" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 6 9 17l-5-5"></path>
+              </svg>
+            </span>
+          </button>
+          <button type="button" class="btn-square danger" id="clearAllQuickBtn" data-i18n-aria="clearAllSite"
+            aria-label="Clear cookies for this site">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 6h18"></path>
+              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+              <path d="M10 11v6"></path>
+              <path d="M14 11v6"></path>
+            </svg>
           </button>
         </div>
+      </section>
 
-        <!-- Add Cookie Form -->
-        <div class="form-card hidden" id="addCookieForm">
-          <div class="form-card-title" data-i18n="newCookie">New Cookie</div>
-          <div class="form-row">
-            <div class="field">
-              <label class="field-label" data-i18n="name">Name</label>
-              <input type="text" class="form-input" id="newName" placeholder="session_id" autocomplete="off" />
-            </div>
-            <div class="field">
-              <label class="field-label" data-i18n="value">Value</label>
-              <input type="text" class="form-input" id="newValue" placeholder="abc123…" autocomplete="off" />
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="field">
-              <label class="field-label" data-i18n="path">Path</label>
-              <input type="text" class="form-input" id="newPath" placeholder="/" autocomplete="off" />
-            </div>
-            <div class="field">
-              <label class="field-label" data-i18n="expiresLabel">Expires (days, blank = session)</label>
-              <input type="number" class="form-input" id="newExpiry" placeholder="30" min="0" />
-            </div>
-          </div>
-          <div class="form-row flags-row">
-            <label class="toggle-label">
-              <input type="checkbox" id="newSecure" />
-              <span class="toggle-pill"></span>
-              <span data-i18n="secure">Secure</span>
-            </label>
-            <label class="toggle-label">
-              <input type="checkbox" id="newHttpOnly" />
-              <span class="toggle-pill"></span>
-              <span data-i18n="httpOnly">HttpOnly</span>
-            </label>
-            <label class="toggle-label">
-              <input type="checkbox" id="newSameSite" />
-              <span class="toggle-pill"></span>
-              <span data-i18n="sameSiteStrict">SameSite Strict</span>
-            </label>
-          </div>
-          <div class="form-actions">
-            <button class="btn btn-ghost btn-sm" id="cancelAddBtn" data-i18n="cancel">Cancel</button>
-            <button class="btn btn-primary btn-sm" id="saveNewCookieBtn" data-i18n="saveCookie">Save Cookie</button>
-          </div>
+      <!-- Profiles -->
+      <section class="tab-panel" id="tab-profiles">
+        <div class="panel-head">
+          <div class="panel-title" data-i18n="profilesTitle">Profiles</div>
+          <div class="panel-sub" data-i18n="profilesSubtitle">Save a login, then switch accounts in one tap.</div>
         </div>
-
-        <div class="cookie-list" id="cookieList"></div>
-
-        <div class="empty-state hidden" id="cookiesEmpty">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-            opacity="0.3">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="8" y1="12" x2="16" y2="12" />
-          </svg>
-          <p data-i18n="noCookiesFound">No cookies found</p>
-          <span data-i18n="noCookiesDesc">This page has no cookies or they are filtered out</span>
-        </div>
-      </div>
-
-      <!-- ── Profiles Tab ── -->
-      <div class="tab-panel" id="tab-profiles">
-        <div class="panel-toolbar">
-          <span class="toolbar-label" data-i18n="savedProfiles">Saved Profiles</span>
-          <button class="btn btn-primary btn-sm" id="saveProfileBtn">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-              stroke-linecap="round" stroke-linejoin="round">
-              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-              <polyline points="17 21 17 13 7 13 7 21" />
-              <polyline points="7 3 7 8 15 8" />
-            </svg>
-            <span data-i18n="saveCurrent">Save Current</span>
-          </button>
-        </div>
-
-        <!-- Save Profile Form -->
-        <div class="form-card hidden" id="saveProfileForm">
-          <div class="form-card-title" data-i18n="saveProfile">Save Profile</div>
-          <div class="field">
-            <label class="field-label" data-i18n="profileName">Profile Name</label>
-            <input type="text" class="form-input full-width" id="profileNameInput"
-              data-i18n-placeholder="profileNamePlaceholder" placeholder="e.g. Work Account, Dev Session…" autocomplete="off" />
-          </div>
-          <div class="form-actions">
-            <button class="btn btn-ghost btn-sm" id="cancelProfileBtn" data-i18n="cancel">Cancel</button>
-            <button class="btn btn-primary btn-sm" id="confirmSaveProfileBtn" data-i18n="saveProfile">Save Profile</button>
-          </div>
-        </div>
-
-        <div class="profile-list" id="profileList"></div>
-
+        <div class="profile-list vokscroll" id="profileList"></div>
         <div class="empty-state hidden" id="profilesEmpty">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-            opacity="0.3">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-            <circle cx="12" cy="7" r="4" />
-          </svg>
           <p data-i18n="noProfilesYet">No profiles yet</p>
           <span data-i18n="noProfilesDesc">Save your current cookies as a reusable profile</span>
         </div>
-      </div>
-
-      <!-- ── Transfer Tab ── -->
-      <div class="tab-panel active" id="tab-transfer">
-
-        <div class="transfer-section">
-          <div class="section-heading">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
+        <div class="profile-footer">
+          <button type="button" class="btn-block" id="openSaveProfileBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M5 12h14"></path>
+              <path d="M12 5v14"></path>
             </svg>
-            <span data-i18n="exportHeading">Export</span>
-          </div>
-          <div class="transfer-card">
-            <div class="transfer-card-body">
-              <div class="transfer-card-title" data-i18n="currentTabCookies">Current Tab Cookies</div>
-              <div class="transfer-card-desc" data-i18n="currentTabCookiesDesc">Download cookies for this domain as JSON</div>
-            </div>
-            <button class="btn btn-primary btn-sm" id="exportCurrentBtn" data-i18n="exportBtn">Export</button>
-          </div>
-          <div class="transfer-card">
-            <div class="transfer-card-body">
-              <div class="transfer-card-title" data-i18n="allProfiles">All Saved Profiles</div>
-              <div class="transfer-card-desc" data-i18n="allProfilesDesc">Bundle all profiles into one JSON file</div>
-            </div>
-            <button class="btn btn-primary btn-sm" id="exportProfilesBtn" data-i18n="exportBtn">Export</button>
-          </div>
+            <span data-i18n="saveAsProfile">Save current tab as profile</span>
+          </button>
+          <div class="hint" data-i18n="switchHint">Switching replaces this site's cookies.</div>
         </div>
+      </section>
 
-        <div class="transfer-section">
-          <div class="section-heading">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="17 8 12 3 7 8" />
-              <line x1="12" y1="3" x2="12" y2="15" />
-            </svg>
-            <span data-i18n="importHeading">Import</span>
-          </div>
-          <div class="transfer-card drop-zone" data-import-type="cookies" id="dropZoneCookies">
-            <div class="transfer-card-body">
-              <div class="transfer-card-title" data-i18n="cookiesFromJson">Cookies from JSON</div>
-              <div class="transfer-card-desc" data-i18n="cookiesFromJsonDesc">Load cookies into the current tab</div>
-              <span class="drop-hint" data-i18n="dropHint">or drag a .json file here</span>
-            </div>
-            <label class="btn btn-outline btn-sm" for="importCookiesFile">
-              <span data-i18n="chooseFile">Choose File</span>
-              <input type="file" id="importCookiesFile" accept=".json" hidden />
+      <!-- Tools -->
+      <section class="tab-panel" id="tab-tools">
+        <div class="panel-head">
+          <div class="panel-title" data-i18n="toolsTitle">Tools</div>
+          <div class="panel-sub" data-i18n="toolsSubtitle">Move, clean and protect cookies.</div>
+        </div>
+        <div class="tools-body vokscroll">
+          <div class="tool-card tool-card-transfer">
+            <button type="button" class="tool-row" id="toolsExportBtn">
+              <span class="tool-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <path d="m7 10 5 5 5-5"></path>
+                  <path d="M12 15V3"></path>
+                </svg>
+              </span>
+              <span class="tool-text">
+                <span class="tool-title" data-i18n="export">Export</span>
+                <span class="tool-desc" data-i18n="exportDesc">JSON, Netscape, header string or CSV</span>
+              </span>
+              <svg style="color:var(--muted)" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
+                <path d="m9 18 6-6-6-6"></path>
+              </svg>
+            </button>
+            <label class="tool-row tool-file">
+              <span class="tool-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <path d="m17 8-5-5-5 5"></path>
+                  <path d="M12 3v12"></path>
+                </svg>
+              </span>
+              <span class="tool-text">
+                <span class="tool-title" data-i18n="import">Import</span>
+                <span class="tool-desc" data-i18n="importDesc">Drag a file onto this popup, or browse</span>
+              </span>
+              <svg style="color:var(--muted)" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
+                <path d="m9 18 6-6-6-6"></path>
+              </svg>
+              <input type="file" id="importFileTools" accept=".json,.txt,application/json,text/plain" />
             </label>
           </div>
-          <div class="transfer-card drop-zone" data-import-type="profiles" id="dropZoneProfiles">
-            <div class="transfer-card-body">
-              <div class="transfer-card-title" data-i18n="profilesFromJson">Profiles from JSON</div>
-              <div class="transfer-card-desc" data-i18n="profilesFromJsonDesc">Restore profiles from a previous export</div>
-              <span class="drop-hint" data-i18n="dropHint">or drag a .json file here</span>
+
+          <div>
+            <div class="section-label" data-i18n="cleanup">Cleanup</div>
+            <div class="tool-card">
+              <button type="button" class="tool-row compact" id="cleanExpiredBtn">
+                <span class="tool-text"><span class="tool-title" data-i18n="deleteExpired">Delete expired</span></span>
+                <span class="tool-meta" id="expiredMeta">0</span>
+              </button>
+              <button type="button" class="tool-row compact" id="cleanTrackersBtn">
+                <span class="tool-text"><span class="tool-title" data-i18n="deleteTrackers">Delete tracking
+                    cookies</span></span>
+                <span class="tool-meta" id="trackerMeta">0</span>
+              </button>
+              <button type="button" class="tool-row compact danger-text" id="clearAllBtn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3 6h18"></path>
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                </svg>
+                <span class="tool-text"><span class="tool-title" data-i18n="clearAllSite">Clear all cookies for this
+                    site</span></span>
+              </button>
             </div>
-            <label class="btn btn-outline btn-sm" for="importProfilesFile">
-              <span data-i18n="chooseFile">Choose File</span>
-              <input type="file" id="importProfilesFile" accept=".json" hidden />
-            </label>
+          </div>
+
+          <div class="protected-banner">
+            <span class="tool-icon ok">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path
+                  d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z">
+                </path>
+              </svg>
+            </span>
+            <span class="tool-text">
+              <span class="tool-title" data-i18n="protectedCookies">Protected cookies</span>
+              <span class="tool-desc" id="protectedMeta">0 protected</span>
+            </span>
+            <button type="button" class="btn-chip" id="openProtectedBtn" data-i18n="manage">Manage</button>
           </div>
         </div>
-
-        <!-- Import Preview -->
-        <div class="import-preview hidden" id="importPreview">
-          <div class="section-heading" data-i18n="preview">Preview</div>
-          <div class="preview-list" id="previewList"></div>
-          <div class="form-actions">
-            <button class="btn btn-ghost btn-sm" id="cancelImportBtn" data-i18n="cancel">Cancel</button>
-            <button class="btn btn-primary btn-sm" id="confirmImportBtn" data-i18n="apply">Apply</button>
-          </div>
-        </div>
-
-      </div>
-    </main>
-
-    <!-- ── Toast ── -->
-    <div class="toast hidden" id="toast">
-      <span class="toast-icon" id="toastIcon"></span>
-      <span id="toastMessage"></span>
+      </section>
     </div>
 
+    <nav class="tab-bar" aria-label="Sections">
+      <button type="button" class="tab-btn active" data-tab="cookies">
+        <span class="tab-pill">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"></path>
+            <path d="M8.5 8.5v.01"></path>
+            <path d="M16 15.5v.01"></path>
+            <path d="M12 12v.01"></path>
+            <path d="M11 17v.01"></path>
+            <path d="M7 14v.01"></path>
+          </svg>
+        </span>
+        <span data-i18n="navCookies">Cookies</span>
+      </button>
+      <button type="button" class="tab-btn" data-tab="profiles">
+        <span class="tab-pill">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        </span>
+        <span data-i18n="navProfiles">Profiles</span>
+      </button>
+      <button type="button" class="tab-btn" data-tab="tools">
+        <span class="tab-pill">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path
+              d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z">
+            </path>
+          </svg>
+        </span>
+        <span data-i18n="navTools">Tools</span>
+      </button>
+    </nav>
+
+    <!-- Scrim + sheets host -->
+    <div class="scrim hidden" id="scrim"></div>
+    <div id="sheetHost"></div>
+
+    <!-- Drag overlays (valid / wrong file) -->
+    <div class="drop-scrim hidden" id="dropScrim" aria-hidden="true"></div>
+
+    <div class="drop-zone valid hidden" id="dropValid" role="region"
+      aria-label="Drop zone: release the file to import cookies">
+      <svg class="drop-ants" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <rect class="ants" x="1.25" y="1.25" width="97.5" height="97.5" rx="6.5" pathLength="100"
+          fill="none" stroke="currentColor" stroke-width="0.7" stroke-dasharray="2.2 2.2"
+          stroke-linecap="round" vector-effect="non-scaling-stroke"></rect>
+      </svg>
+      <div class="drop-hero" aria-hidden="true">
+        <div class="drop-pulse"></div>
+        <div class="drop-pulse p2"></div>
+        <div class="drop-badge ok">
+          <svg class="drop-arrow" width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m17 8-5-5-5 5"></path>
+            <path d="M12 3v12"></path>
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          </svg>
+        </div>
+      </div>
+      <div class="drop-copy">
+        <div class="drop-title" data-i18n="dropValid">Drop to import</div>
+        <div class="drop-desc">
+          <span data-i18n="dropValidDesc">Release the file anywhere in this popup.</span><br />
+          <span data-i18n="dropValidInto">Cookies are added to</span>
+          <span class="drop-domain" id="dropDomainValid">site</span>.
+        </div>
+      </div>
+      <div class="drop-chips">
+        <span class="drop-chip accent">.json</span>
+        <span class="drop-chip accent">.txt (Netscape)</span>
+        <span class="drop-chip accent" data-i18n="dropChipProfiles">Profiles bundle</span>
+      </div>
+    </div>
+
+    <div class="drop-zone invalid hidden" id="dropInvalid" role="alert"
+      aria-label="Unsupported file. This file can't be imported.">
+      <svg class="drop-ants" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <rect class="ants" x="1.25" y="1.25" width="97.5" height="97.5" rx="6.5" pathLength="100"
+          fill="none" stroke="currentColor" stroke-width="0.7" stroke-dasharray="2.2 2.2"
+          stroke-linecap="round" vector-effect="non-scaling-stroke"></rect>
+      </svg>
+      <div class="drop-hero" aria-hidden="true">
+        <div class="drop-pulse"></div>
+        <div class="drop-pulse p2"></div>
+        <div class="drop-badge err shake">
+          <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+            <path d="M14 2v6h6"></path>
+            <path d="m9.5 12.5 5 5"></path>
+            <path d="m14.5 12.5-5 5"></path>
+          </svg>
+        </div>
+      </div>
+      <div class="drop-copy">
+        <div class="drop-title" data-i18n="dropUnsupported">Unsupported file</div>
+        <div class="drop-desc">
+          “<span id="dropErrorName">file</span>”
+          <span data-i18n="dropUnsupportedDesc">isn't a cookie export.</span><br />
+          <span data-i18n="dropUnsupportedHint">Drop a file from the list below instead.</span>
+        </div>
+      </div>
+      <div class="drop-chips">
+        <span class="drop-chip">.json</span>
+        <span class="drop-chip">.txt (Netscape)</span>
+        <span class="drop-chip" data-i18n="dropChipProfiles">Profiles bundle</span>
+      </div>
+      <div class="drop-cancel" data-i18n="dropMoveAway">Move the file away to cancel</div>
+    </div>
+
+    <div class="toast-wrap" id="toastWrap" aria-live="polite">
+      <div class="toast" id="toast" role="status">
+        <span class="toast-icon" id="toastIcon" aria-hidden="true"></span>
+        <span id="toastMessage"></span>
+      </div>
+    </div>
   </div>
 
-  <script src="popup.js"></script>
+  <script type="module" src="popup.js"></script>
 </body>
 
 </html>

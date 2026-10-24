@@ -28,6 +28,7 @@ jobs:
             manifest.json \
             popup \
             background \
+            src \
             icons \
             resources \
             -x "*.git*" "*.DS_Store"

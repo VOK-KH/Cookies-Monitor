@@ -1,10 +1,11 @@
 /* ─────────────────────────────────────────
-   VOK Cookies – Background Service Worker
+   VOK Cookies v2 – Background Service Worker
 ───────────────────────────────────────── */
 
 'use strict';
 
-// Update the extension badge with the cookie count for the active tab
+const BADGE_COLOR = '#6B5CF0';
+
 chrome.tabs.onActivated.addListener(async ({ tabId }) => {
   await updateBadge(tabId);
 });
@@ -23,20 +24,19 @@ chrome.cookies.onChanged.addListener(async () => {
 async function updateBadge(tabId) {
   try {
     const tab = await chrome.tabs.get(tabId);
-    if (!tab.url || tab.url.startsWith('chrome://') || tab.url.startsWith('edge://')) {
+    if (!tab.url || tab.url.startsWith('chrome://') || tab.url.startsWith('edge://') || tab.url.startsWith('about:')) {
       chrome.action.setBadgeText({ text: '', tabId });
       return;
     }
 
     const cookies = await chrome.cookies.getAll({ url: tab.url });
-    const count   = cookies.length;
+    const count = cookies.length;
 
     chrome.action.setBadgeText({
-      text:  count > 0 ? String(count) : '',
+      text: count > 0 ? String(count) : '',
       tabId,
     });
-
-    chrome.action.setBadgeBackgroundColor({ color: '#7c6ef5', tabId });
+    chrome.action.setBadgeBackgroundColor({ color: BADGE_COLOR, tabId });
   } catch {
     // Tab may have been closed or navigated away
   }

@@ -1,12 +1,13 @@
 {
   "manifest_version": 3,
   "name": "VOK Cookies",
-  "version": "1.0.1",
-  "description": "Manage cookies, save profiles, and import/export with ease.",
+  "version": "2.0.0",
+  "description": "Manage, profile, export, and protect cookies — security insights and multi-format transfer.",
   "permissions": ["cookies", "activeTab", "storage", "tabs"],
   "host_permissions": ["<all_urls>"],
   "action": {
     "default_popup": "popup/popup.html",
+    "default_title": "VOK Cookies",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",
