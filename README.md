@@ -20,37 +20,20 @@
 
 ## Preview
 
-<p align="center">
-  <img src="resources/preview/cookies.jpg" alt="Cookies tab" width="280"/>
-</p>
-
-<p align="center">
-  <img src="resources/preview/profiles.jpg" alt="Profiles" width="180"/>
-  &nbsp;
-  <img src="resources/preview/tools.jpg" alt="Tools" width="180"/>
-  &nbsp;
-  <img src="resources/preview/export.jpg" alt="Export sheet" width="180"/>
-</p>
-
-<p align="center">
-  <img src="resources/preview/import.jpg" alt="Import review" width="180"/>
-  &nbsp;
-  <img src="resources/preview/clear.jpg" alt="Clear modal" width="180"/>
-  &nbsp;
-  <img src="resources/preview/drop.jpg" alt="Drop to import" width="180"/>
-  &nbsp;
-  <img src="resources/preview/drop-error.jpg" alt="Unsupported file" width="180"/>
-</p>
-
-| Screen | Description |
-|---|---|
-| **Cookies** | Security score, filters, expandable list, export / import / copy / clear |
-| **Profiles** | Save & switch account cookie sets |
-| **Tools** | Export, import, cleanup, protected cookies |
-| **Export** | JSON · Netscape · Header · CSV |
-| **Import** | Merge / replace with file review |
-| **Clear** | Confirm delete with backup option |
-| **Drop zone** | Drag `.json` / Netscape `.txt` onto the popup |
+<table>
+  <tr>
+    <td align="center" width="25%"><img src="resources/preview/cookies.jpg" alt="Cookies"/><br/><sub>Cookies</sub></td>
+    <td align="center" width="25%"><img src="resources/preview/profiles.jpg" alt="Profiles"/><br/><sub>Profiles</sub></td>
+    <td align="center" width="25%"><img src="resources/preview/tools.jpg" alt="Tools"/><br/><sub>Tools</sub></td>
+    <td align="center" width="25%"><img src="resources/preview/export.jpg" alt="Export"/><br/><sub>Export</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="resources/preview/import.jpg" alt="Import"/><br/><sub>Import</sub></td>
+    <td align="center"><img src="resources/preview/clear.jpg" alt="Clear"/><br/><sub>Clear</sub></td>
+    <td align="center"><img src="resources/preview/drop.jpg" alt="Drop"/><br/><sub>Drop</sub></td>
+    <td align="center"><img src="resources/preview/drop-error.jpg" alt="Drop error"/><br/><sub>Drop error</sub></td>
+  </tr>
+</table>
 
 ---
 
